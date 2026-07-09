@@ -109,11 +109,10 @@ Unlike traditional placement portals, CampusHire AI incorporates resume intellig
 
 # 🖼 Screenshots
 
-> Replace these placeholders with actual screenshots.
 
 ## Main Page
 
-![Login](docs/pictures/main-page.png)
+![Main](docs/pictures/main-page.png)
 
 ---
 
