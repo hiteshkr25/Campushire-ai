@@ -747,17 +747,24 @@ def drive_ats_rankings(drive_id):
 
     applications = Application.query.filter_by(drive_id=drive.id).all()
     
+    import json
     from app.student.ats_service import AtsService
     rankings = []
     for app in applications:
         student = app.student
-        ats_data = AtsService.calculate_ats_score(student, drive)
+        if app.ats_score is None or app.ats_data is None:
+            RecruiterService._persist_ats_scores(app)
+        try:
+            ats_data = json.loads(app.ats_data)
+        except Exception:
+            ats_data = AtsService.calculate_ats_score(student, drive)
+            
         rankings.append({
             "application": app,
             "student": student,
-            "ats_score": ats_data["score"],
-            "breakdown": ats_data["breakdown"],
-            "missing_skills": ats_data["missing_skills"]
+            "ats_score": float(app.ats_score),
+            "breakdown": ats_data.get("breakdown", {}),
+            "missing_skills": ats_data.get("missing_skills", [])
         })
 
     rankings.sort(key=lambda x: x["ats_score"], reverse=True)

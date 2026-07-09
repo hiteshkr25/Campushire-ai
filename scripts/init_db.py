@@ -72,6 +72,16 @@ def main():
         db.session.commit()
 
         db.create_all()
+        # Add columns to applications table if they do not exist for backward-compatible persistence
+        try:
+            db.session.execute(db.text("ALTER TABLE applications ADD COLUMN IF NOT EXISTS ats_score NUMERIC(5, 2);"))
+            db.session.execute(db.text("ALTER TABLE applications ADD COLUMN IF NOT EXISTS match_score NUMERIC(5, 2);"))
+            db.session.execute(db.text("ALTER TABLE applications ADD COLUMN IF NOT EXISTS ats_data TEXT;"))
+            db.session.commit()
+            print("Database columns for ATS persistence verified/added.")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Non-critical migration alert: {e}")
         print("Database tables validated.")
 
         repaired = migrate_legacy_enum_values(db.engine)

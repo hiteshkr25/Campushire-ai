@@ -1,7 +1,5 @@
 import json
 import re
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from app.models import Resume, PlacementDrive, Student
 from app.models.enums import EligibilityRuleType, ParseStatus
@@ -122,8 +120,9 @@ class AtsService:
         ]
 
     @classmethod
-    def calculate_ats_score(cls, student, drive):
-        resume = cls._primary_or_latest_resume(student)
+    def calculate_ats_score(cls, student, drive, resume=None):
+        if not resume:
+            resume = cls._primary_or_latest_resume(student)
         if not resume or not resume.parsed_text:
             return {
                 "score": 0,
@@ -277,6 +276,9 @@ class AtsService:
 
         if job_description.strip() and clean_resume_text.strip():
             try:
+                from sklearn.feature_extraction.text import TfidfVectorizer
+                from sklearn.metrics.pairwise import cosine_similarity
+                
                 vectorizer = TfidfVectorizer(stop_words='english')
                 tfidf = vectorizer.fit_transform([job_description, clean_resume_text])
                 sim = cosine_similarity(tfidf[0:1], tfidf[1:2])

@@ -49,6 +49,9 @@ class Application(BaseModel):
         nullable=False,
         server_default=func.now(),
     )
+    ats_score = db.Column(db.Numeric(5, 2), nullable=True)
+    match_score = db.Column(db.Numeric(5, 2), nullable=True)
+    ats_data = db.Column(db.Text, nullable=True)
 
     round_results = db.relationship(
         "RoundResult",
