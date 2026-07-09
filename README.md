@@ -112,13 +112,13 @@ Unlike traditional placement portals, CampusHire AI incorporates resume intellig
 
 ## Main Page
 
-![Main](docs/pictures/main-page.png)
+![Main](docs/images/main-page.png)
 
 ---
 
 ## Login Page
 
-![Login](docs/pictures/login-page.png)
+![Login](docs/images/login-page.png)
 
 ---
 
