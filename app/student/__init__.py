@@ -738,19 +738,66 @@ def ats_dashboard():
     from app.student.services import DriveService
     from app.student.ats_service import AtsService
     from app.models.drive import PlacementDrive
-    from app.models.enums import DriveStatus
+    from app.models.enums import DriveStatus, EligibilityRuleType
+    from app.models.application import Application
+    from decimal import Decimal
+    import json
     
     drives = PlacementDrive.query.filter(
         PlacementDrive.status.in_([DriveStatus.PUBLISHED, DriveStatus.ONGOING])
     ).all()
     
+    resume = AtsService._primary_or_latest_resume(student)
+    
+    # Fetch student's applications for these drives in a single query
+    apps = Application.query.filter(
+        Application.student_id == student.id,
+        Application.drive_id.in_([d.id for d in drives])
+    ).all()
+    app_map = {app.drive_id: app for app in apps}
+    
     drives_with_ats = []
     for d in drives:
-        ats_data = AtsService.calculate_ats_score(student, d)
+        app = app_map.get(d.id)
+        if app and app.ats_score is not None and app.ats_data is not None:
+            try:
+                ats_data = json.loads(app.ats_data)
+            except Exception:
+                ats_data = {}
+            score = float(app.ats_score)
+            missing_count = len(ats_data.get("missing_skills", []))
+        else:
+            ats_data = AtsService.calculate_ats_score(student, d, resume=resume)
+            score = ats_data["score"]
+            missing_count = len(ats_data["missing_skills"])
+            if app:
+                try:
+                    app.ats_score = Decimal(str(score))
+                    # compute match_score
+                    required_skills = []
+                    skills_rule = d.eligibility_rules.filter_by(rule_type=EligibilityRuleType.REQUIRED_SKILL).first()
+                    if skills_rule and isinstance(skills_rule.rule_value, dict):
+                        required_skills = skills_rule.rule_value.get("value", [])
+                    student_skills = {
+                        s_skill.skill.name.strip().lower()
+                        for s_skill in student.skills.all()
+                        if s_skill.skill and s_skill.skill.name
+                    }
+                    if required_skills:
+                        matching = sum(1 for s in required_skills if s.strip().lower() in student_skills)
+                        match_score = round((matching / len(required_skills) * 100), 2)
+                    else:
+                        match_score = 75.0
+                    app.match_score = Decimal(str(match_score))
+                    app.ats_data = json.dumps(ats_data)
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+                    
         drives_with_ats.append({
             "drive": d,
-            "ats_score": ats_data["score"],
-            "missing_count": len(ats_data["missing_skills"])
+            "ats_score": score,
+            "missing_count": missing_count
         })
 
     return render_template(
@@ -767,8 +814,44 @@ def view_ats_details(drive_id):
     from app.models.drive import PlacementDrive
     drive = PlacementDrive.query.get_or_404(drive_id)
     
+    from app.models.application import Application
+    app = Application.query.filter_by(student_id=student.id, drive_id=drive.id).first()
+    
+    import json
+    from decimal import Decimal
     from app.student.ats_service import AtsService
-    ats_data = AtsService.calculate_ats_score(student, drive)
+    from app.models.enums import EligibilityRuleType
+    
+    if app and app.ats_score is not None and app.ats_data is not None:
+        try:
+            ats_data = json.loads(app.ats_data)
+        except Exception:
+            ats_data = AtsService.calculate_ats_score(student, drive)
+    else:
+        ats_data = AtsService.calculate_ats_score(student, drive)
+        if app:
+            try:
+                app.ats_score = Decimal(str(ats_data["score"]))
+                # compute match_score
+                required_skills = []
+                skills_rule = drive.eligibility_rules.filter_by(rule_type=EligibilityRuleType.REQUIRED_SKILL).first()
+                if skills_rule and isinstance(skills_rule.rule_value, dict):
+                    required_skills = skills_rule.rule_value.get("value", [])
+                student_skills = {
+                    s_skill.skill.name.strip().lower()
+                    for s_skill in student.skills.all()
+                    if s_skill.skill and s_skill.skill.name
+                }
+                if required_skills:
+                    matching = sum(1 for s in required_skills if s.strip().lower() in student_skills)
+                    match_score = round((matching / len(required_skills) * 100), 2)
+                else:
+                    match_score = 75.0
+                app.match_score = Decimal(str(match_score))
+                app.ats_data = json.dumps(ats_data)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
     return render_template(
         "student/ats_details.html",

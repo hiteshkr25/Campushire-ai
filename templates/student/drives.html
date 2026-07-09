@@ -53,15 +53,21 @@
         padding: 1.5rem;
     }
 
+    :root {
+        --text-primary: var(--ch-text-base);
+        --text-secondary: var(--ch-text-muted);
+    }
+
     .access-panel-card {
         width: 100%;
         max-width: 520px;
         border-radius: 12px !important;
-        border: 1px solid rgba(100, 112, 138, 0.15) !important;
-        background-color: var(--dash-card-bg, #ffffff) !important;
+        border: 1px solid var(--ch-border) !important;
+        background-color: var(--ch-surface) !important;
         box-shadow: 0 12px 32px -12px rgba(16, 24, 40, 0.1), 
                     0 1px 3px rgba(16, 24, 40, 0.02) !important;
         overflow: visible !important; /* Ensure children can render outside boundary without clipping */
+        color: var(--text-primary) !important;
     }
 
     .access-panel-card .card-body {
@@ -74,10 +80,15 @@
         margin-top: 0.75rem !important;
         margin-bottom: 0.75rem !important;
         overflow: visible !important;
+        color: var(--text-primary) !important;
     }
 
-    [data-theme="dark"] .access-panel-card {
-        border-color: rgba(255, 255, 255, 0.08) !important;
+    .access-panel-card p {
+        color: var(--text-secondary) !important;
+    }
+
+    [data-bs-theme="dark"] .access-panel-card {
+        border-color: var(--ch-border) !important;
         box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.35), 
                     0 1px 3px rgba(0, 0, 0, 0.1) !important;
     }
@@ -86,9 +97,9 @@
         font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: var(--dash-muted, #64708a);
+        color: var(--text-secondary) !important;
         font-weight: 700;
-        border-bottom: 1px solid rgba(100, 112, 138, 0.1);
+        border-bottom: 1px solid var(--ch-border) !important;
         padding-bottom: 0.5rem;
         margin-bottom: 1rem; /* More space before list */
     }
@@ -99,14 +110,16 @@
         justify-content: space-between;
         padding: 0.65rem 0.85rem;
         border-radius: 8px;
-        border: 1px solid rgba(100, 112, 138, 0.06);
-        background-color: rgba(100, 112, 138, 0.02);
+        border: 1px solid var(--ch-border) !important;
+        background-color: var(--ch-surface-alt) !important;
+        color: var(--text-primary) !important;
         margin-bottom: 0.5rem; /* Spacious list spacing */
     }
 
     .benefit-info-card {
-        border: 1px solid rgba(100, 112, 138, 0.08) !important;
-        background-color: rgba(100, 112, 138, 0.01) !important;
+        border: 1px solid var(--ch-border) !important;
+        background-color: var(--ch-surface-alt) !important;
+        color: var(--text-secondary) !important;
         border-radius: 8px !important;
         padding: 0.85rem 1rem !important;
         margin-top: 1.5rem; /* Space before information card */
@@ -295,7 +308,7 @@
 
                 <!-- INFORMATIONAL BENEFIT CARD -->
                 <div class="benefit-info-card small text-muted">
-                    <strong class="text-dark d-block mb-1"><i class="fa-solid fa-circle-info me-1"></i>Once verified, you will be able to:</strong>
+                    <strong class="d-block mb-1" style="color: var(--text-primary);"><i class="fa-solid fa-circle-info me-1"></i>Once verified, you will be able to:</strong>
                     <ul class="mb-0 ps-3">
                         <li>View all placement drives & check eligibility</li>
                         <li>Apply to companies & track applications</li>
@@ -320,7 +333,7 @@
                 <p class="text-muted small">Complete your profile details, upload your resume, and wait for official TPO verification before accessing campus placement drives.</p>
                 
                 <div class="mt-4 p-3 bg-light rounded-3">
-                    <strong class="d-block mb-2 text-dark small">Current Status:</strong>
+                    <strong class="d-block mb-2 small" style="color: var(--text-primary);">Current Status:</strong>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="small text-muted">Profile Completion:</span>
                         <strong class="small">{{ profile_completion }}%</strong>

@@ -338,23 +338,58 @@ class RecruiterService:
         candidates = []
 
         for app in applications:
-            student = app.student
-            drive = app.drive
-            
-            ats_score, match_score = cls._calculate_dynamic_scores(student, drive)
+            if app.ats_score is None or app.match_score is None:
+                cls._persist_ats_scores(app)
             
             candidates.append({
                 "application": app,
-                "student": student,
-                "drive": drive,
-                "ats_score": ats_score,
-                "match_score": match_score
+                "student": app.student,
+                "drive": app.drive,
+                "ats_score": float(app.ats_score),
+                "match_score": float(app.match_score)
             })
 
         return candidates
 
     @classmethod
+    def _persist_ats_scores(cls, app):
+        import json
+        from app.student.ats_service import AtsService
+        student = app.student
+        drive = app.drive
+        
+        ats_data = AtsService.calculate_ats_score(student, drive)
+        
+        required_skills = []
+        skills_rule = drive.eligibility_rules.filter_by(rule_type=EligibilityRuleType.REQUIRED_SKILL).first()
+        if skills_rule and isinstance(skills_rule.rule_value, dict):
+            required_skills = skills_rule.rule_value.get("value", [])
+
+        student_skills = {
+            s_skill.skill.name.strip().lower()
+            for s_skill in student.skills.all()
+            if s_skill.skill and s_skill.skill.name
+        }
+
+        if required_skills:
+            matching = sum(1 for s in required_skills if s.strip().lower() in student_skills)
+            match_score = round((matching / len(required_skills) * 100), 2)
+        else:
+            match_score = 75.0
+            
+        app.ats_score = Decimal(str(ats_data["score"]))
+        app.match_score = Decimal(str(match_score))
+        app.ats_data = json.dumps(ats_data)
+        db.session.commit()
+
+    @classmethod
     def _calculate_dynamic_scores(cls, student, drive):
+        app = Application.query.filter_by(student_id=student.id, drive_id=drive.id).first()
+        if app:
+            if app.ats_score is None or app.match_score is None:
+                cls._persist_ats_scores(app)
+            return float(app.ats_score), float(app.match_score)
+
         from app.student.ats_service import AtsService
         ats_data = AtsService.calculate_ats_score(student, drive)
 
@@ -388,9 +423,14 @@ class RecruiterService:
         student = app.student
         drive = app.drive
 
-        from app.student.ats_service import AtsService
-        ats_data = AtsService.calculate_ats_score(student, drive)
-        _, match_score = cls._calculate_dynamic_scores(student, drive)
+        if app.ats_score is None or app.match_score is None or app.ats_data is None:
+            cls._persist_ats_scores(app)
+
+        import json
+        try:
+            ats_data = json.loads(app.ats_data)
+        except Exception:
+            ats_data = {}
 
         resumes = student.resumes.order_by(Student.resumes.property.mapper.class_.is_primary.desc()).all()
         primary_resume = next((r for r in resumes if r.is_primary), None)
@@ -403,17 +443,17 @@ class RecruiterService:
             "application": app,
             "student": student,
             "drive": drive,
-            "ats_score": float(ats_data["score"]),
-            "match_score": match_score,
+            "ats_score": float(app.ats_score),
+            "match_score": float(app.match_score),
             "resumes": resumes,
             "primary_resume": primary_resume,
             "projects": projects,
             "certifications": certifications,
             "skills": skills,
-            "similarity_explanation": ats_data["similarity_explanation"],
-            "match_confidence": ats_data["match_confidence"],
-            "candidate_recommendation": ats_data["candidate_recommendation"],
-            "skill_gap": ats_data["skill_gap"]
+            "similarity_explanation": ats_data.get("similarity_explanation", ""),
+            "match_confidence": ats_data.get("match_confidence", "Low"),
+            "candidate_recommendation": ats_data.get("candidate_recommendation", ""),
+            "skill_gap": ats_data.get("skill_gap", [])
         }
 
     @classmethod

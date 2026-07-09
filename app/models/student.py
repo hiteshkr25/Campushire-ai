@@ -1,5 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import deferred
 
 from app.extensions import db
 from app.models.base import BaseModel
@@ -222,7 +223,7 @@ class Resume(BaseModel):
     mime_type = db.Column(db.String(100), nullable=False)
     file_size_bytes = db.Column(db.BigInteger, nullable=False)
     is_primary = db.Column(db.Boolean, nullable=False, default=False)
-    parsed_text = db.Column(db.Text)
+    parsed_text = deferred(db.Column(db.Text))
     parse_status = db.Column(
         db.Enum(ParseStatus, name="parse_status", values_callable=lambda x: [e.value for e in x]),
         nullable=False,

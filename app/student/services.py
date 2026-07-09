@@ -465,6 +465,32 @@ class ApplicationService:
             existing.cover_note = (cover_note or "").strip() or None
             existing.applied_at = now
             existing.status_updated_at = now
+            
+            try:
+                import json
+                from app.student.ats_service import AtsService
+                ats_data = AtsService.calculate_ats_score(student, drive, resume=resume)
+                existing.ats_score = Decimal(str(ats_data["score"]))
+                
+                required_skills = []
+                skills_rule = drive.eligibility_rules.filter_by(rule_type=EligibilityRuleType.REQUIRED_SKILL).first()
+                if skills_rule and isinstance(skills_rule.rule_value, dict):
+                    required_skills = skills_rule.rule_value.get("value", [])
+                student_skills = {
+                    s_skill.skill.name.strip().lower()
+                    for s_skill in student.skills.all()
+                    if s_skill.skill and s_skill.skill.name
+                }
+                if required_skills:
+                    matching = sum(1 for s in required_skills if s.strip().lower() in student_skills)
+                    match_score = round((matching / len(required_skills) * 100), 2)
+                else:
+                    match_score = 75.0
+                existing.match_score = Decimal(str(match_score))
+                existing.ats_data = json.dumps(ats_data)
+            except Exception:
+                pass
+                
             db.session.commit()
             return existing
 
@@ -481,6 +507,32 @@ class ApplicationService:
             status_updated_at=now,
         )
         db.session.add(application)
+        
+        try:
+            import json
+            from app.student.ats_service import AtsService
+            ats_data = AtsService.calculate_ats_score(student, drive, resume=resume)
+            application.ats_score = Decimal(str(ats_data["score"]))
+            
+            required_skills = []
+            skills_rule = drive.eligibility_rules.filter_by(rule_type=EligibilityRuleType.REQUIRED_SKILL).first()
+            if skills_rule and isinstance(skills_rule.rule_value, dict):
+                required_skills = skills_rule.rule_value.get("value", [])
+            student_skills = {
+                s_skill.skill.name.strip().lower()
+                for s_skill in student.skills.all()
+                if s_skill.skill and s_skill.skill.name
+            }
+            if required_skills:
+                matching = sum(1 for s in required_skills if s.strip().lower() in student_skills)
+                match_score = round((matching / len(required_skills) * 100), 2)
+            else:
+                match_score = 75.0
+            application.match_score = Decimal(str(match_score))
+            application.ats_data = json.dumps(ats_data)
+        except Exception:
+            pass
+            
         db.session.commit()
         return application
 

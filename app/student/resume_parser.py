@@ -29,15 +29,6 @@ import re
 from pathlib import Path
 from datetime import datetime, timezone
 
-import pdfplumber
-import PyPDF2
-
-try:
-    import fitz as _fitz  # PyMuPDF — optional, used for hyperlink extraction
-    _FITZ_AVAILABLE = True
-except ImportError:
-    _FITZ_AVAILABLE = False
-
 from app.extensions import db
 from app.models.student import Resume
 from app.models.enums import ParseStatus
@@ -132,6 +123,8 @@ _BULLET_RE       = re.compile(r"^[•\-\*–▪◦➤➢►▶]\s+")
 
 def _extract_pdf_text(file_path: Path) -> str:
     """Try pdfplumber (good layout), fall back to PyPDF2."""
+    import pdfplumber
+    import PyPDF2
     text = ""
     try:
         with pdfplumber.open(file_path) as pdf:
@@ -176,27 +169,32 @@ def _extract_pdf_links(file_path: Path) -> list[str]:
     collected: list[str] = []
 
     # ── Layer 1: PyMuPDF ────────────────────────────────────────────────────
-    if _FITZ_AVAILABLE:
-        try:
-            with _fitz.open(str(file_path)) as doc:
-                for page in doc:
-                    for lnk in page.get_links():
-                        uri = lnk.get("uri", "")
-                        if uri and uri.startswith(("http://", "https://")):
-                            collected.append(uri)
-        except Exception:
-            pass
+    try:
+        import fitz as _fitz
+        with _fitz.open(str(file_path)) as doc:
+            for page in doc:
+                for lnk in page.get_links():
+                    uri = lnk.get("uri", "")
+                    if uri and uri.startswith(("http://", "https://")):
+                        collected.append(uri)
+    except ImportError:
+        pass
+    except Exception:
+        pass
 
     # ── Layer 2: pdfplumber .hyperlinks ─────────────────────────────────────
     # pdfplumber exposes annotation-layer hyperlinks via page.hyperlinks,
     # each a dict with at minimum {"uri": "..."}.
     try:
+        import pdfplumber
         with pdfplumber.open(file_path) as pdf:
             for page in pdf.pages:
                 for h in getattr(page, "hyperlinks", []):
                     uri = h.get("uri", "") if isinstance(h, dict) else ""
                     if uri and uri.startswith(("http://", "https://")):
                         collected.append(uri)
+    except ImportError:
+        pass
     except Exception:
         pass
 
