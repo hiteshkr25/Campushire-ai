@@ -1,0 +1,281 @@
+{% extends "portals/base_portal.html" %}
+{% from "components/ats_ring.html" import ats_ring %}
+
+{% block title %}Candidate Profile Review - CampusHire AI{% endblock %}
+{% block portal_heading %}Candidate Profile Review{% endblock %}
+{% block portal_subheading %}Review student profile credentials, check ATS match scores, read parsed resumes, and evaluate application state.{% endblock %}
+{% block breadcrumb_current %}Candidates / Profile{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('recruiter.candidates') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Directory</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4">
+    <!-- Main Candidate Profile Column -->
+    <div class="col-lg-8">
+        <!-- Personal & Academic Details Card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between border-bottom pb-3 mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="user-avatar user-avatar-lg bg-primary text-white fs-4 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">{{ student.first_name[:1]|upper }}</span>
+                        <div>
+                            <h2 class="h4 mb-0 text-primary-emphasis">{{ student.full_name }}</h2>
+                            <p class="mb-0 text-muted small"><i class="fa-solid fa-envelope me-1"></i>{{ student.user.email }}</p>
+                        </div>
+                    </div>
+                    <span class="badge text-bg-light border fw-bold p-2">Enrollment: {{ student.enrollment_number }}</span>
+                </div>
+
+                <div class="row g-3 small">
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Academic Branch</span>
+                        <strong class="text-primary-emphasis">{{ student.branch.name if student.branch else 'Unknown' }}</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Current Semester</span>
+                        <strong class="text-primary-emphasis">Semester {{ student.semester or 'N/A' }}</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Target Graduation Year</span>
+                        <strong class="text-primary-emphasis">{{ student.graduation_year or 'N/A' }}</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Academic CGPA</span>
+                        <strong class="text-success">{{ student.cgpa or 'N/A' }} CGPA</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Active Backlogs</span>
+                        <strong class="{% if student.backlogs_count > 0 %}text-danger{% else %}text-muted{% endif %}">{{ student.backlogs_count }} backlogs</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Admission Batch</span>
+                        <strong class="text-primary-emphasis">{{ student.batch or 'N/A' }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills Section -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-tags me-2 text-primary"></i>Core Skills Tag Cloud</h3>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for skill in skills %}
+                    <span class="badge text-bg-primary-subtle text-primary p-2 px-3 fs-7">{{ skill }}</span>
+                    {% else %}
+                    <span class="text-muted small">No skill tags listed in candidate profile.</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Portfolio -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-folder-open me-2 text-primary"></i>Project Portfolio</h3>
+                {% for project in projects %}
+                <div class="border rounded p-3 mb-3 bg-light-subtle">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong class="text-primary-emphasis">{{ project.title }}</strong>
+                        {% if project.project_url %}
+                        <a href="{{ project.project_url }}" target="_blank" class="btn btn-link btn-sm p-0"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Project Link</a>
+                        {% endif %}
+                    </div>
+                    <p class="mb-2 text-muted small" style="line-height: 1.4;">{{ project.description }}</p>
+                    {% if project.technologies_used %}
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for tech in project.technologies_used.split(',') %}
+                        <span class="badge text-bg-light border text-muted fs-8">{{ tech.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-center py-3 text-muted small">No project details uploaded.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Certifications Portfolio -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-award me-2 text-primary"></i>Professional Certifications</h3>
+                {% for cert in certifications %}
+                <div class="border rounded p-3 mb-3 bg-light-subtle d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong class="text-primary-emphasis d-block">{{ cert.name }}</strong>
+                        <small class="text-muted">Issued by {{ cert.issuing_organization }}</small>
+                    </div>
+                    <small class="text-muted fw-bold">Issued: {{ cert.issue_date.strftime('%b %Y') if cert.issue_date else 'N/A' }}</small>
+                </div>
+                {% else %}
+                <div class="text-center py-3 text-muted small">No certification credentials uploaded.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Resume Roster & Preview -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-file-pdf me-2 text-primary"></i>Resume Management</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle mb-0 small">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th>Resume Filename</th>
+                                <th>Size</th>
+                                <th>Uploaded Date</th>
+                                <th class="text-center">Primary</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in resumes %}
+                            <tr>
+                                <td>
+                                    <strong class="d-block text-truncate" style="max-width: 250px;">{{ r.file_name }}</strong>
+                                </td>
+                                <td>{{ (r.file_size_bytes / 1024)|round(1) }} KB</td>
+                                <td>{{ r.uploaded_at.strftime('%d %b %Y') }}</td>
+                                <td class="text-center">
+                                    {% if r.is_primary %}
+                                    <span class="badge text-bg-success"><i class="fa-solid fa-check me-1"></i>Active</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('recruiter.preview_candidate_resume', resume_id=r.id) }}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-eye me-1"></i>Preview</a>
+                                    <a href="{{ url_for('recruiter.download_candidate_resume', resume_id=r.id) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-download me-1"></i>Download</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-3 text-muted">No resume files found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Evaluation & Scores Column -->
+    <div class="col-lg-4">
+        <!-- ATS Rank & Match Scores -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-chart-simple me-2 text-primary"></i>Hiring Algorithm Analytics</h3>
+                
+                <!-- ATS Score -->
+                <div class="mb-4">
+                    <small class="text-muted fw-bold d-block mb-2">ATS Score Rank</small>
+                    <div class="d-flex justify-content-center mb-2">
+                        {% set ats_color = 'danger' %}
+                        {% if ats_score >= 80 %}{% set ats_color = 'success' %}
+                        {% elif ats_score >= 60 %}{% set ats_color = 'warning' %}
+                        {% endif %}
+                        {{ ats_ring(score=ats_score, size="sm") }}
+                    </div>
+                    <small class="text-muted d-block mt-1 fs-8 text-center">Evaluates academic records, resume existence, and key skills tags.</small>
+                </div>
+
+                <!-- Match Score -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="text-muted fw-bold">Skills Match Score</small>
+                        <strong class="text-success">{{ match_score }}% Match</strong>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        {% set match_col = 'danger' %}
+                        {% if match_score >= 75 %}{% set match_col = 'success' %}
+                        {% elif match_score >= 50 %}{% set match_col = 'warning' %}
+                        {% endif %}
+                        <div class="progress-bar bg-{{ match_col }}" role="progressbar" style="width: {{ match_score }}%;" aria-valuenow="{{ match_score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1 fs-8">Measures overlap between drive's required skills and student profile.</small>
+                </div>
+
+                <!-- Match Confidence -->
+                <div class="mb-3 pt-2 border-top">
+                    <span class="text-muted d-block small fw-bold">Match Confidence</span>
+                    <span class="badge text-bg-{{ ats_color }}-subtle text-{{ ats_color }} border mt-1">
+                        {{ match_confidence }} Confidence
+                    </span>
+                </div>
+
+                <!-- ATS Recommendation -->
+                <div class="mb-3">
+                    <span class="text-muted d-block small fw-bold">ATS Recommendation</span>
+                    <strong class="text-primary-emphasis d-block mt-0.5" style="font-size: 0.82rem; line-height: 1.3;">{{ candidate_recommendation }}</strong>
+                </div>
+
+                <!-- Similarity Explanation -->
+                <div class="mb-3">
+                    <span class="text-muted d-block small fw-bold">Similarity Context</span>
+                    <small class="text-muted d-block mt-0.5" style="font-size: 0.78rem; line-height: 1.3;">{{ similarity_explanation }}</small>
+                </div>
+
+                <!-- Skill Gaps -->
+                <div class="mb-1">
+                    <span class="text-muted d-block small fw-bold">Skill Gaps</span>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        {% for gap in skill_gap %}
+                        <span class="badge text-bg-warning-subtle text-warning border" style="font-size: 0.7rem;">{{ gap }}</span>
+                        {% else %}
+                        <span class="badge text-bg-success-subtle text-success border" style="font-size: 0.7rem;"><i class="fa-solid fa-check me-1"></i>No Skill Gaps</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluation Form -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-file-signature me-2 text-primary"></i>Application Evaluation</h3>
+                
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Applied for Drive:</span>
+                    <strong class="text-primary-emphasis small">{{ drive.title }}</strong>
+                </div>
+
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Current Status:</span>
+                    {% set badge_type = 'secondary' %}
+                    {% if application.status.value == 'placed' or application.status.value == 'selected' %}{% set badge_type = 'success' %}
+                    {% elif application.status.value == 'shortlisted' or application.status.value == 'interview_in_progress' %}{% set badge_type = 'warning' %}
+                    {% elif application.status.value == 'rejected' %}{% set badge_type = 'danger' %}
+                    {% endif %}
+                    <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }} mt-1">
+                        {{ application.status.value|replace('_', ' ')|title }}
+                    </span>
+                </div>
+
+                <form method="POST" action="{{ url_for('recruiter.evaluate_candidate', application_id=application.id) }}" class="small">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Select Action / Status</label>
+                        <select name="status" class="form-select form-select-sm bg-transparent text-primary-emphasis" required>
+                            {% for st in statuses %}
+                            <option value="{{ st }}" {% if application.status.value == st %}selected{% endif %}>{{ st|replace('_', ' ')|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Recruiter Remarks / Internal Notes</label>
+                        <textarea name="remarks" rows="4" class="form-control form-control-sm bg-transparent text-primary-emphasis" placeholder="Add feedback/remarks for verification and student alerts..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-sm w-100"><i class="fa-solid fa-save me-1"></i>Save Evaluation</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ title }} - CampusHire AI{% endblock %}
+{% block portal_heading %}{{ title }}{% endblock %}
+{% block portal_subheading %}Modify sequence, grading criteria, and parameters for interview round '{{ round.round_name }}'.{% endblock %}
+{% block breadcrumb_current %}Rounds / {{ round.round_name }} / Edit{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('tpo.view_drive', drive_id=drive.id) }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Drive Details</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-route me-2 text-primary"></i>Interview Round Parameters</h2>
+                    
+                    <div class="row g-3 mb-4">
+                        <!-- Round Name -->
+                        <div class="col-md-6">
+                            {{ form.round_name.label(class="form-label") }}
+                            {{ form.round_name(class="form-control" ~ (" is-invalid" if form.round_name.errors else ""), placeholder="e.g. Technical Round 1") }}
+                            {% for error in form.round_name.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Round Type -->
+                        <div class="col-md-6">
+                            {{ form.round_type.label(class="form-label") }}
+                            {{ form.round_type(class="form-select" ~ (" is-invalid" if form.round_type.errors else "")) }}
+                            {% for error in form.round_type.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Sequence Order -->
+                        <div class="col-md-4">
+                            {{ form.sequence_order.label(class="form-label") }}
+                            {{ form.sequence_order(class="form-control" ~ (" is-invalid" if form.sequence_order.errors else ""), type="number") }}
+                            {% for error in form.sequence_order.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Passing Score -->
+                        <div class="col-md-4">
+                            {{ form.passing_score.label(class="form-label") }}
+                            {{ form.passing_score(class="form-control" ~ (" is-invalid" if form.passing_score.errors else ""), placeholder="e.g. 60.00") }}
+                            {% for error in form.passing_score.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Eliminatory Option -->
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                {{ form.is_eliminatory(class="form-check-input") }}
+                                {{ form.is_eliminatory.label(class="form-check-label fw-bold") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-4">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control" ~ (" is-invalid" if form.description.errors else ""), rows=4, placeholder="Instructions, criteria, syllabus, or assessment platform URL...") }}
+                        {% for error in form.description.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                        <a href="{{ url_for('tpo.view_drive', drive_id=drive.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

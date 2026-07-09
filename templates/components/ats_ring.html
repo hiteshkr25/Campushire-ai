@@ -1,0 +1,48 @@
+{#
+  ATS Animated Progress Ring — Jinja2 macro
+  ─────────────────────────────────────────
+  Usage:
+    {% from "components/ats_ring.html" import ats_ring %}
+    {{ ats_ring(score=75) }}
+    {{ ats_ring(score=50, size="sm") }}
+    {{ ats_ring(score=92, size="lg", show_denom=True) }}
+
+  Parameters:
+    score      int   0-100
+    size       str   "mini" | "sm" | "md" (default) | "lg"
+    show_denom bool  Show "/100" below the score (default True)
+    extra_class str  Extra CSS classes on the wrapper
+#}
+
+{% macro ats_ring(score, size="md", show_denom=True, extra_class="") %}
+{%- set s = (score | int) -%}
+{%- if s <= 40 -%}
+  {%- set color_cls = "ats-ring--red" -%}
+{%- elif s <= 70 -%}
+  {%- set color_cls = "ats-ring--orange" -%}
+{%- elif s <= 85 -%}
+  {%- set color_cls = "ats-ring--blue" -%}
+{%- else -%}
+  {%- set color_cls = "ats-ring--green" -%}
+{%- endif -%}
+<div class="ats-ring-wrap ats-ring--{{ size }}{% if extra_class %} {{ extra_class }}{% endif %}"
+     data-ats-score="{{ s }}"
+     role="img"
+     aria-label="ATS score {{ s }} out of 100">
+  <svg class="ats-ring-svg"
+       viewBox="0 0 120 120"
+       xmlns="http://www.w3.org/2000/svg"
+       aria-hidden="true">
+    <!-- Track (grey background circle) -->
+    <circle class="ats-ring-track" cx="60" cy="60" r="48" />
+    <!-- Animated progress arc; colour + offset set by ats-ring.js -->
+    <circle class="ats-ring-progress {{ color_cls }}" cx="60" cy="60" r="48" />
+  </svg>
+  <div class="ats-ring-label">
+    <span class="ats-ring-score">{{ s }}</span>
+    {%- if show_denom %}
+    <small class="ats-ring-denom">/100</small>
+    {%- endif %}
+  </div>
+</div>
+{% endmacro %}

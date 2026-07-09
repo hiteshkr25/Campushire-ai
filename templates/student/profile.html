@@ -1,0 +1,242 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Student Profile - CampusHire AI{% endblock %}
+{% block portal_heading %}Profile Management{% endblock %}
+{% block portal_subheading %}Keep personal, academic, skills, projects, certifications, and contact information ready for placement workflows.{% endblock %}
+{% block breadcrumb_current %}Profile{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.create_project') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-diagram-project me-1"></i>Add Project</a>
+<a href="{{ url_for('student.create_certification') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-certificate me-1"></i>Add Certification</a>
+{% endblock %}
+
+{% block portal_content %}
+{% set is_verified = student.profile_status.value == 'verified' %}
+<div class="row g-4">
+    <div class="col-xl-8">
+        {% if is_verified %}
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+            <i class="fa-solid fa-circle-info me-3 fs-4 text-info"></i>
+            <div>
+                <strong>Verified Profile Locked:</strong> Core identity and institutional details have been verified by the TPO. 
+                Need to fix a typo? <a href="{{ url_for('student.request_profile_change') }}" class="alert-link fw-bold text-decoration-underline">Request Profile Change</a>.
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="POST" novalidate class="card dashboard-panel glass-dashboard-card border-0 profile-form-card">
+            <div class="card-body">
+                {{ form.hidden_tag() }}
+                <div class="panel-header">
+                    <div>
+                        <h2>Student profile</h2>
+                        <p>Update your core placement profile and contact details.</p>
+                    </div>
+                    {{ form.submit(class="btn btn-primary btn-sm") }}
+                </div>
+
+                <section class="profile-section">
+                    <h3>Personal information</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            {{ form.first_name.label(class="form-label") }}
+                            {% if is_verified %}
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            {% endif %}
+                            {{ form.first_name(class="form-control" + (" is-invalid" if form.first_name.errors else ""), disabled=is_verified) }}
+                            {% for error in form.first_name.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.last_name.label(class="form-label") }}
+                            {% if is_verified %}
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            {% endif %}
+                            {{ form.last_name(class="form-control" + (" is-invalid" if form.last_name.errors else ""), disabled=is_verified) }}
+                            {% for error in form.last_name.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.date_of_birth.label(class="form-label") }}
+                            {% if is_verified %}
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            {% endif %}
+                            {{ form.date_of_birth(class="form-control" + (" is-invalid" if form.date_of_birth.errors else ""), disabled=is_verified) }}
+                            {% for error in form.date_of_birth.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.gender.label(class="form-label") }}
+                            {% if is_verified %}
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            {% endif %}
+                            {{ form.gender(class="form-select" + (" is-invalid" if form.gender.errors else ""), disabled=is_verified) }}
+                            {% for error in form.gender.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-12">{{ form.bio.label(class="form-label") }}{{ form.bio(class="form-control" + (" is-invalid" if form.bio.errors else ""), rows="3", placeholder="Briefly describe your goals, strengths, and preferred roles.") }}{% for error in form.bio.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+                    </div>
+                </section>
+
+                <section class="profile-section">
+                    <h3>Academic details</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            {{ form.enrollment_number.label(class="form-label") }}
+                            {% if is_verified %}
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            {% endif %}
+                            {{ form.enrollment_number(class="form-control" + (" is-invalid" if form.enrollment_number.errors else ""), disabled=is_verified) }}
+                            {% for error in form.enrollment_number.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.branch_id.label(class="form-label") }}
+                            {% if is_verified %}
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            {% endif %}
+                            {{ form.branch_id(class="form-select" + (" is-invalid" if form.branch_id.errors else ""), disabled=is_verified) }}
+                            {% for error in form.branch_id.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3">{{ form.semester.label(class="form-label") }}{{ form.semester(class="form-control" + (" is-invalid" if form.semester.errors else "")) }}{% for error in form.semester.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+                        <div class="col-md-3">{{ form.cgpa.label(class="form-label") }}{{ form.cgpa(class="form-control" + (" is-invalid" if form.cgpa.errors else ""), step="0.01") }}{% for error in form.cgpa.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+                        <div class="col-md-3">{{ form.backlogs_count.label(class="form-label") }}{{ form.backlogs_count(class="form-control" + (" is-invalid" if form.backlogs_count.errors else "")) }}{% for error in form.backlogs_count.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+                        <div class="col-md-3">
+                            {{ form.graduation_year.label(class="form-label") }}
+                            {% if is_verified %}
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            {% endif %}
+                            {{ form.graduation_year(class="form-control" + (" is-invalid" if form.graduation_year.errors else ""), disabled=is_verified) }}
+                            {% for error in form.graduation_year.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.batch.label(class="form-label") }}
+                            {% if is_verified %}
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            {% endif %}
+                            {{ form.batch(class="form-control" + (" is-invalid" if form.batch.errors else ""), disabled=is_verified, placeholder="2022-2026") }}
+                            {% for error in form.batch.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">College</label>
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            <input type="text" class="form-control" value="{{ student.college.name }}" disabled>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="profile-section">
+                    <h3>Skills</h3>
+                    {{ form.skills(class="form-control" + (" is-invalid" if form.skills.errors else ""), rows="3", placeholder="Python, SQL, React, Machine Learning") }}
+                    {% for error in form.skills.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                    <div class="form-text">Separate skills with commas. They are saved to the normalized skills table.</div>
+                </section>
+
+                <section class="profile-section">
+                    <h3>Contact information</h3>
+                    <div class="row g-3">
+                        <div class="col-md-4">{{ form.phone.label(class="form-label") }}{{ form.phone(class="form-control" + (" is-invalid" if form.phone.errors else "")) }}{% for error in form.phone.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+                        <div class="col-md-4">{{ form.linkedin_url.label(class="form-label") }}{{ form.linkedin_url(class="form-control" + (" is-invalid" if form.linkedin_url.errors else ""), placeholder="https://linkedin.com/in/...") }}{% for error in form.linkedin_url.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+                        <div class="col-md-4">{{ form.github_url.label(class="form-label") }}{{ form.github_url(class="form-control" + (" is-invalid" if form.github_url.errors else ""), placeholder="https://github.com/...") }}{% for error in form.github_url.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+                        <div class="col-md-12">
+                            <label class="form-label">Official College Email</label>
+                            <i class="fa-solid fa-lock ms-1 text-muted" data-bs-toggle="tooltip" title="Verified by the Training & Placement Office."></i>
+                            <input type="text" class="form-control" value="{{ student.user.email }}" disabled>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </form>
+
+        {% if change_requests %}
+        <div class="card dashboard-panel glass-dashboard-card border-0 mt-4 text-start">
+            <div class="card-body">
+                <div class="panel-header mb-3">
+                    <div>
+                        <h2>Profile change requests</h2>
+                        <p>History of requests submitted for TPO approval.</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle small">
+                        <thead>
+                            <tr>
+                                <th>Submitted</th>
+                                <th>Field Name</th>
+                                <th>Requested Value</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Reviewer Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in change_requests %}
+                            <tr>
+                                <td>{{ req.created_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+                                <td><span class="badge bg-secondary">{{ req.field_name.replace('_', ' ').title() }}</span></td>
+                                <td><code>{{ req.requested_value }}</code></td>
+                                <td>{{ req.reason }}</td>
+                                <td>
+                                    {% if req.status == 'approved' %}
+                                    <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Approved</span>
+                                    {% elif req.status == 'rejected' %}
+                                    <span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i>Rejected</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i>Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ req.rejection_reason or '—' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="panel-header"><h2>Profile completion</h2></div>
+                <div class="profile-completion-ring mx-auto" style="--completion: {{ profile_completion }};"><span>{{ profile_completion }}%</span></div>
+                <p class="text-center profile-helper mt-3 mb-0">Complete projects, certifications, skills, and contact links to improve recruiter visibility.</p>
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="panel-header"><div><h2>Projects</h2><p>CRUD-managed portfolio work.</p></div><a href="{{ url_for('student.create_project') }}" class="btn btn-sm btn-outline-primary">Add</a></div>
+                <div class="profile-list">
+                    {% for project in projects %}
+                    <article class="profile-list-item">
+                        <div><strong>{{ project.title }}</strong><small>{{ project.tech_stack or 'Tech stack not added' }}</small></div>
+                        <div class="profile-list-actions">
+                            <a href="{{ url_for('student.edit_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
+                            <form method="POST" action="{{ url_for('student.delete_project', project_id=project.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="fa-solid fa-trash"></i></button></form>
+                        </div>
+                    </article>
+                    {% else %}
+                    <p class="profile-empty">No projects added yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header"><div><h2>Certifications</h2><p>Credentials and achievements.</p></div><a href="{{ url_for('student.create_certification') }}" class="btn btn-sm btn-outline-primary">Add</a></div>
+                <div class="profile-list">
+                    {% for certification in certifications %}
+                    <article class="profile-list-item">
+                        <div><strong>{{ certification.name }}</strong><small>{{ certification.issuer }} · {{ certification.issue_date }}</small></div>
+                        <div class="profile-list-actions">
+                            <a href="{{ url_for('student.edit_certification', certification_id=certification.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
+                            <form method="POST" action="{{ url_for('student.delete_certification', certification_id=certification.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="fa-solid fa-trash"></i></button></form>
+                        </div>
+                    </article>
+                    {% else %}
+                    <p class="profile-empty">No certifications added yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

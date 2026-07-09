@@ -1,0 +1,168 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}User Profile Details - CampusHire AI{% endblock %}
+{% block portal_heading %}User Profile Details{% endblock %}
+{% block portal_subheading %}Preview profile metadata, credentials statuses, and operational logs for this account.{% endblock %}
+{% block breadcrumb_current %}Users / Preview{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('admin.users_list') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Directory</a>
+<a href="{{ url_for('admin.edit_user', user_id=user_record.id) }}" class="btn btn-warning btn-sm"><i class="fa-solid fa-user-pen me-1"></i>Edit Profile</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4 text-start">
+    <!-- Left panel: Account credentials overview -->
+    <div class="col-lg-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-center">
+            <div class="card-body py-4">
+                {% set profile_name = "System Admin" %}
+                {% if user_record.role == UserRole.STUDENT and user_record.student_profile %}{% set profile_name = user_record.student_profile.full_name %}
+                {% elif user_record.role == UserRole.RECRUITER and user_record.recruiter_profile %}{% set profile_name = user_record.recruiter_profile.full_name %}
+                {% elif user_record.role == UserRole.TPO and user_record.tpo_profile %}{% set profile_name = user_record.tpo_profile.full_name %}
+                {% endif %}
+
+                <span class="user-avatar user-avatar-lg bg-primary text-white fs-4 d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 70px; height: 70px;">{{ profile_name[:1]|upper }}</span>
+                <h2 class="h5 mb-1 text-primary-emphasis">{{ profile_name }}</h2>
+                <small class="text-muted d-block mb-3">{{ user_record.email }}</small>
+                
+                <hr>
+
+                <div class="mb-3 text-start small">
+                    <span class="text-muted d-block mb-1">System Role:</span>
+                    <span class="badge text-bg-light border text-muted">{{ user_record.role.value|upper }}</span>
+                </div>
+
+                <div class="mb-3 text-start small">
+                    <span class="text-muted d-block mb-1">Access Status:</span>
+                    {% if user_record.is_active %}
+                    <span class="badge text-bg-success-subtle text-success border border-success-subtle">Active / Enabled</span>
+                    {% else %}
+                    <span class="badge text-bg-danger-subtle text-danger border border-danger-subtle">Locked / Deactivated</span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3 text-start small">
+                    <span class="text-muted d-block mb-1">Verification Status:</span>
+                    {% if user_record.is_verified %}
+                    <span class="badge text-bg-success-subtle text-success border border-success-subtle"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>
+                    {% else %}
+                    <span class="badge text-bg-warning-subtle text-warning border border-warning-subtle"><i class="fa-solid fa-circle-minus me-1"></i>Pending Verification</span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-2 text-start small">
+                    <span class="text-muted d-block">Last Login:</span>
+                    <strong>{{ user_record.last_login_at.strftime('%d %b %Y, %I:%M %p') if user_record.last_login_at else 'Never' }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right panel: Profile Metadata & Activity History -->
+    <div class="col-lg-8">
+        <!-- Profile details card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-address-card me-2"></i>Profile Metadata Details</h3>
+                
+                {% if user_record.role == UserRole.STUDENT and user_record.student_profile %}
+                {% set student = user_record.student_profile %}
+                <div class="row g-3 small">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Campus College</span>
+                        <strong>{{ student.college.name if student.college else 'N/A' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Academic Branch</span>
+                        <strong>{{ student.branch.name if student.branch else 'N/A' }} ({{ student.branch.code if student.branch else 'N/A' }})</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Enrollment Number</span>
+                        <strong>{{ student.enrollment_number }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Admission Batch / Graduation Year</span>
+                        <strong>Batch: {{ student.batch }} (Class of {{ student.graduation_year }})</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">CGPA Standing / Backlogs</span>
+                        <strong class="text-success">{{ student.cgpa or 'N/A' }} CGPA / {{ student.backlogs_count }} active backlogs</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Contact Phone</span>
+                        <strong>{{ student.phone or 'N/A' }}</strong>
+                    </div>
+                </div>
+
+                {% elif user_record.role == UserRole.RECRUITER and user_record.recruiter_profile %}
+                {% set recruiter = user_record.recruiter_profile %}
+                <div class="row g-3 small">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Hiring Company Partner</span>
+                        <strong>{{ recruiter.company.name if recruiter.company else 'N/A' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Corporate Designation</span>
+                        <strong>{{ recruiter.designation or 'N/A' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Primary Contact Flag</span>
+                        <strong>{{ 'Yes' if recruiter.is_primary_contact else 'No' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Contact Phone</span>
+                        <strong>{{ recruiter.phone or 'N/A' }}</strong>
+                    </div>
+                </div>
+
+                {% elif user_record.role == UserRole.TPO and user_record.tpo_profile %}
+                {% set tpo = user_record.tpo_profile %}
+                <div class="row g-3 small">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Campus College</span>
+                        <strong>{{ tpo.college.name if tpo.college else 'N/A' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Academic Designation / Department</span>
+                        <strong>{{ tpo.designation or 'N/A' }} ({{ tpo.department or 'N/A' }})</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Primary TPO Flag</span>
+                        <strong>{{ 'Yes' if tpo.is_primary_tpo else 'No' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Contact Phone</span>
+                        <strong>{{ tpo.phone or 'N/A' }}</strong>
+                    </div>
+                </div>
+
+                {% else %}
+                <p class="text-muted mb-0 small">No extra profile table parameters for System Administrators role.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Activity History logs -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-clock-rotate-left me-2"></i>Account Activity History</h3>
+                <div class="timeline-logs px-2 small">
+                    {% for log in activity %}
+                    <div class="d-flex gap-3 mb-3 border-start ps-3 position-relative">
+                        <span class="timeline-dot position-absolute start-0 translate-middle rounded-circle bg-primary" style="width: 8px; height: 8px; top: 8px;"></span>
+                        <div>
+                            <strong class="text-primary-emphasis">{{ log.action.value|replace('_', ' ')|title }}</strong>
+                            <span class="text-muted">Entity: {{ log.entity_type }} (ID: {{ log.entity_id }})</span>
+                            <small class="text-muted d-block mt-0.5">{{ log.created_at.strftime('%d %b %Y, %I:%M %p') }}</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0 small">No login or database mutation logs associated with this user.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

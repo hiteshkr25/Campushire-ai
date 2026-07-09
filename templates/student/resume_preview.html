@@ -1,0 +1,22 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Resume Preview - CampusHire AI{% endblock %}
+{% block portal_heading %}Resume Preview{% endblock %}
+{% block portal_subheading %}DOCX files cannot be safely embedded in the browser here, but you can download the selected version.{% endblock %}
+{% block breadcrumb_current %}Resume Preview{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.resumes') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Resumes</a>
+<a href="{{ url_for('student.download_resume', resume_id=resume.id) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-download me-1"></i>Download</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="card dashboard-panel glass-dashboard-card border-0 resume-docx-preview">
+    <div class="card-body text-center">
+        <i class="fa-solid fa-file-word"></i>
+        <h2>{{ resume.file_name }}</h2>
+        <p>DOCX preview is available by downloading the file and opening it locally.</p>
+        <a href="{{ url_for('student.download_resume', resume_id=resume.id) }}" class="btn btn-primary"><i class="fa-solid fa-download me-1"></i>Download DOCX</a>
+    </div>
+</div>
+{% endblock %}

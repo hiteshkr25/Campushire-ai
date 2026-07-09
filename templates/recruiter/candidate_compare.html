@@ -1,0 +1,221 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Candidate Comparison Grid - CampusHire AI{% endblock %}
+{% block portal_heading %}Candidate Comparison Grid{% endblock %}
+{% block portal_subheading %}Compare selected candidate profile credentials, skills, academic standing, and ATS ranking side-by-side.{% endblock %}
+{% block breadcrumb_current %}Candidates / Compare{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('recruiter.candidates') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Directory</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle mb-0 text-center small" style="table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th style="width: 200px;" class="table-light text-start">Candidate Metric</th>
+                        {% for item in candidates %}
+                        <th class="table-light text-primary-emphasis">
+                            <span class="user-avatar user-avatar-md bg-primary text-white fs-5 d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 50px; height: 50px;">{{ item.student.first_name[:1]|upper }}</span>
+                            <strong class="d-block">{{ item.student.full_name }}</strong>
+                            <small class="text-muted">{{ item.student.user.email }}</small>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Academic Branch -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Branch</td>
+                        {% for item in candidates %}
+                        <td><strong>{{ item.student.branch.code if item.student.branch else 'N/A' }}</strong></td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- CGPA -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">CGPA (Academic)</td>
+                        {% for item in candidates %}
+                        <td><span class="fs-6 fw-bold text-success">{{ item.student.cgpa or 'N/A' }}</span></td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Backlogs -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Active Backlogs</td>
+                        {% for item in candidates %}
+                        <td>
+                            <span class="{% if item.student.backlogs_count > 0 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                {{ item.student.backlogs_count }} backlogs
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Graduation Year -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Graduation Batch</td>
+                        {% for item in candidates %}
+                        <td>{{ item.student.batch }} ({{ item.student.graduation_year }})</td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- ATS Score -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">ATS Rank Score</td>
+                        {% for item in candidates %}
+                        <td>
+                            {% set score = item.ats_score %}
+                            {% set badge_color = 'danger' %}
+                            {% if score >= 80 %}{% set badge_color = 'success' %}
+                            {% elif score >= 60 %}{% set badge_color = 'warning' %}
+                            {% endif %}
+                            <span class="badge text-bg-{{ badge_color }}-subtle text-{{ badge_color }} fw-bold fs-6 p-2">
+                                {{ score }} / 100
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Resume Match Score -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Resume Match Score</td>
+                        {% for item in candidates %}
+                        <td>
+                            {% set match = item.match_score %}
+                            {% set match_color = 'danger' %}
+                            {% if match >= 75 %}{% set match_color = 'success' %}
+                            {% elif match >= 50 %}{% set match_color = 'warning' %}
+                            {% endif %}
+                            <span class="badge text-bg-{{ match_color }}-subtle text-{{ match_color }} fw-bold p-2">
+                                {{ match }}% Match
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Match Confidence -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Match Confidence</td>
+                        {% for item in candidates %}
+                        <td>
+                            {% set conf = item.match_confidence %}
+                            {% set conf_color = 'danger' %}
+                            {% if conf == 'High' %}{% set conf_color = 'success' %}
+                            {% elif conf == 'Medium' %}{% set conf_color = 'warning' %}
+                            {% endif %}
+                            <span class="badge text-bg-{{ conf_color }}-subtle text-{{ conf_color }} fw-bold p-2">
+                                {{ conf }} Confidence
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Candidate Recommendation -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">ATS Recommendation</td>
+                        {% for item in candidates %}
+                        <td>
+                            <strong class="text-primary-emphasis d-block">{{ item.candidate_recommendation }}</strong>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Skill Gap -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Skill Gaps</td>
+                        {% for item in candidates %}
+                        <td>
+                            <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                {% for gap in item.skill_gap %}
+                                <span class="badge text-bg-warning-subtle text-warning border fs-8">{{ gap }}</span>
+                                {% else %}
+                                <span class="badge text-bg-success-subtle text-success border"><i class="fa-solid fa-check me-1"></i>No Skill Gap</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Similarity Explanation -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Similarity Explanation</td>
+                        {% for item in candidates %}
+                        <td>
+                            <small class="text-muted d-block">{{ item.similarity_explanation }}</small>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Skills -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Skills Tags</td>
+                        {% for item in candidates %}
+                        <td class="text-start">
+                            <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                {% for skill in item.skills %}
+                                <span class="badge text-bg-primary-subtle text-primary fs-8">{{ skill }}</span>
+                                {% else %}
+                                <span class="text-muted">No skills listed</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Projects Count -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Projects Count</td>
+                        {% for item in candidates %}
+                        <td><strong>{{ item.projects|length }}</strong> projects</td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Certifications Count -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Certifications Count</td>
+                        {% for item in candidates %}
+                        <td><strong>{{ item.certifications|length }}</strong> certs</td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Drive status -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Application Status</td>
+                        {% for item in candidates %}
+                        <td>
+                            {% set badge_type = 'secondary' %}
+                            {% if item.application.status.value == 'placed' or item.application.status.value == 'selected' %}{% set badge_type = 'success' %}
+                            {% elif item.application.status.value == 'shortlisted' or item.application.status.value == 'interview_in_progress' %}{% set badge_type = 'warning' %}
+                            {% elif item.application.status.value == 'rejected' %}{% set badge_type = 'danger' %}
+                            {% endif %}
+                            <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }}">
+                                {{ item.application.status.value|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Actions -->
+                    <tr>
+                        <td class="text-start fw-bold text-muted">Actions</td>
+                        {% for item in candidates %}
+                        <td>
+                            <div class="d-flex flex-column gap-1">
+                                <a href="{{ url_for('recruiter.view_candidate', application_id=item.application.id) }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-eye me-1"></i>View Profile</a>
+                                {% if item.primary_resume %}
+                                <a href="{{ url_for('recruiter.download_candidate_resume', resume_id=item.primary_resume.id) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-download me-1"></i>Resume</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

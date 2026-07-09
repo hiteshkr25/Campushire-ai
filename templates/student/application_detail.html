@@ -1,0 +1,201 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Application Details - CampusHire AI{% endblock %}
+{% block portal_heading %}Application Details{% endblock %}
+{% block portal_subheading %}{{ application.drive.title }} · {{ application.drive.company.name }}{% endblock %}
+{% block breadcrumb_current %}Application{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.applications') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to history</a>
+{% endblock %}
+
+{% block portal_content %}
+{% set drive = application.drive %}
+<div class="row g-4">
+    <div class="col-xl-8">
+        {% if application.offer and application.offer.status.value == 'extended' %}
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-start">
+            <div class="card-body">
+                <div class="panel-header mb-3">
+                    <div>
+                        <h2 class="h5 text-success"><i class="fa-solid fa-gift me-2"></i>Job Offer Extended!</h2>
+                        <p class="text-muted small">The corporate recruiter has extended a job offer for this role.</p>
+                    </div>
+                </div>
+                
+                <div class="row g-3 small mb-4">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Package Offered</span>
+                        <strong>{{ application.offer.package_offered_lpa }} LPA</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Job Location</span>
+                        <strong>{{ application.offer.job_location or 'Not Specified' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Joining Date</span>
+                        <strong>{{ application.offer.joining_date.strftime('%d %b %Y') if application.offer.joining_date else 'TBA' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Offer Expiry</span>
+                        <strong class="text-danger">{{ application.offer.expires_at.strftime('%d %b %Y, %I:%M %p') if application.offer.expires_at else 'TBA' }}</strong>
+                    </div>
+                </div>
+
+                {% if application.offer.offer_letter_path %}
+                <div class="mb-4">
+                    <a href="{{ url_for('static', filename=application.offer.offer_letter_path.replace('static/', '')) }}" class="btn btn-sm btn-outline-primary" download>
+                        <i class="fa-solid fa-file-pdf me-2"></i>Download Offer Letter
+                    </a>
+                </div>
+                {% endif %}
+
+                <hr>
+
+                <h3 class="h6 fw-bold mb-2">Respond to this Offer</h3>
+                <form method="POST" action="" id="offerResponseForm" class="mt-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="response_note" class="form-label small text-muted">Response Note (Optional)</label>
+                        <textarea class="form-control form-control-sm" id="response_note" name="response_note" rows="2" placeholder="Provide any message or feedback..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" onclick="submitOfferResponse('accept')" class="btn btn-success btn-sm flex-fill">Accept Offer</button>
+                        <button type="submit" onclick="submitOfferResponse('decline')" class="btn btn-outline-danger btn-sm flex-fill">Decline Offer</button>
+                    </div>
+                </form>
+                
+                <script>
+                    function submitOfferResponse(action) {
+                        var form = document.getElementById('offerResponseForm');
+                        if (action === 'accept') {
+                            if (confirm('Are you sure you want to ACCEPT this job offer? This action is binding.')) {
+                                form.action = "{{ url_for('student.accept_offer', application_id=application.id) }}";
+                                return true;
+                            }
+                        } else {
+                            if (confirm('Are you sure you want to DECLINE this job offer?')) {
+                                form.action = "{{ url_for('student.decline_offer', application_id=application.id) }}";
+                                return true;
+                            }
+                        }
+                        event.preventDefault();
+                        return false;
+                    }
+                </script>
+            </div>
+        </div>
+        {% elif application.offer and application.offer.status.value == 'accepted' %}
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-start border-success" style="border-left: 4px solid var(--bs-success) !important;">
+            <div class="card-body">
+                <h2 class="h5 text-success mb-2"><i class="fa-solid fa-circle-check me-2"></i>Offer Accepted</h2>
+                <p class="text-muted small">You accepted this offer on <strong>{{ application.offer.responded_at.strftime('%d %b %Y') if application.offer.responded_at else 'TBA' }}</strong>.</p>
+                {% if application.offer.response_note %}
+                <div class="small p-2 bg-light rounded text-muted">
+                    <strong>Your note:</strong> "{{ application.offer.response_note }}"
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% elif application.offer and application.offer.status.value == 'declined' %}
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-start border-danger" style="border-left: 4px solid var(--bs-danger) !important;">
+            <div class="card-body">
+                <h2 class="h5 text-danger mb-2"><i class="fa-solid fa-circle-xmark me-2"></i>Offer Declined</h2>
+                <p class="text-muted small">You declined this offer on <strong>{{ application.offer.responded_at.strftime('%d %b %Y') if application.offer.responded_at else 'TBA' }}</strong>.</p>
+                {% if application.offer.response_note %}
+                <div class="small p-2 bg-light rounded text-muted">
+                    <strong>Your note:</strong> "{{ application.offer.response_note }}"
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Application status</h2>
+                        <p>Current progress for this placement drive.</p>
+                    </div>
+                    <span class="badge text-bg-{{ status_badge(application.status) }}-subtle text-{{ status_badge(application.status) }}">
+                        {{ application.status.value|replace('_', ' ')|title }}
+                    </span>
+                </div>
+
+                <div class="drive-detail-grid mb-4">
+                    <div><small>Applied on</small><strong>{{ application.applied_at.strftime('%d %b %Y, %I:%M %p') if application.applied_at else 'Not submitted' }}</strong></div>
+                    <div><small>Last updated</small><strong>{{ application.status_updated_at.strftime('%d %b %Y, %I:%M %p') if application.status_updated_at else '—' }}</strong></div>
+                    <div><small>Resume used</small><strong>{{ application.resume.file_name if application.resume else 'No resume linked' }}</strong></div>
+                    <div><small>Drive date</small><strong>{{ drive.drive_date.strftime('%d %b %Y') if drive.drive_date else 'TBA' }}</strong></div>
+                </div>
+
+                {% if application.cover_note %}
+                <h3 class="h6 fw-bold">Cover note</h3>
+                <p class="text-muted">{{ application.cover_note }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Drive summary</h2>
+                        <p>Quick reference for the role you applied to.</p>
+                    </div>
+                </div>
+                <div class="drive-detail-grid">
+                    <div><small>Company</small><strong>{{ drive.company.name }}</strong></div>
+                    <div><small>Role</small><strong>{{ drive.job_role }}</strong></div>
+                    <div><small>Package</small><strong>
+                        {% if drive.package_min_lpa and drive.package_max_lpa %}{{ drive.package_min_lpa }}–{{ drive.package_max_lpa }} LPA
+                        {% elif drive.package_max_lpa %}Up to {{ drive.package_max_lpa }} LPA
+                        {% else %}Not disclosed{% endif %}
+                    </strong></div>
+                    <div><small>Location</small><strong>{{ drive.location_type.value|replace('_', ' ')|title }}</strong></div>
+                </div>
+                <a href="{{ url_for('student.drive_detail', drive_id=drive.id) }}" class="btn btn-outline-primary btn-sm mt-3">View full drive details</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Eligibility snapshot</h2>
+                        <p>Checks at the time of viewing.</p>
+                    </div>
+                </div>
+                <span class="drive-eligibility-pill {{ 'eligible' if drive_item.eligibility.eligible else 'not-eligible' }} mb-3">
+                    <i class="fa-solid {{ 'fa-circle-check' if drive_item.eligibility.eligible else 'fa-circle-xmark' }}"></i>
+                    <span>{{ 'Eligible profile' if drive_item.eligibility.eligible else 'Not eligible' }}</span>
+                </span>
+                <ul class="student-checklist eligibility-checklist">
+                    {% for check in drive_item.eligibility.checks[:4] %}
+                    <li class="{{ 'done' if check.passed else '' }}">
+                        <i class="fa-solid {{ 'fa-check' if check.passed else 'fa-xmark' }}"></i>
+                        <div><strong>{{ check.label }}</strong><small>{{ check.message }}</small></div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        {% if can_withdraw %}
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h2 class="h6 fw-bold">Withdraw application</h2>
+                <p class="text-muted small">You can withdraw while the application is still under early review stages.</p>
+                <form method="POST" action="{{ url_for('student.withdraw_application', application_id=application.id) }}" onsubmit="return confirm('Withdraw this application?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-danger w-100">Withdraw application</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,368 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ drive.title }} - Drive Details{% endblock %}
+{% block portal_heading %}{{ drive.title }}{% endblock %}
+{% block portal_subheading %}Placement campaign overview, candidate registration tracking, and interview round planning.{% endblock %}
+{% block breadcrumb_current %}Drives / {{ drive.title }}{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('tpo.drives') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to List</a>
+<a href="{{ url_for('tpo.drive_eligibility', drive_id=drive.id) }}" class="btn btn-outline-info btn-sm"><i class="fa-solid fa-calculator me-1"></i>Eligibility Report</a>
+<a href="{{ url_for('tpo.edit_drive', drive_id=drive.id) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen-to-square me-1"></i>Edit Drive</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Overview Statistics Cards -->
+<div class="row g-3 mb-4">
+    <!-- Candidates Registered -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-primary-subtle text-primary"><i class="fa-solid fa-user-check"></i></span>
+                    <span class="badge text-bg-primary-subtle text-primary">Applicants</span>
+                </div>
+                <small>Total Registrations</small>
+                <strong class="fs-3">{{ total_applicants }}</strong>
+                <em>Candidates registered</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Shortlisted Candidates -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-warning-subtle text-warning"><i class="fa-solid fa-circle-check"></i></span>
+                    <span class="badge text-bg-warning-subtle text-warning">Progress</span>
+                </div>
+                <small>Shortlisted / Ongoing</small>
+                <strong class="fs-3">{{ shortlisted }}</strong>
+                <em>In pipeline</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Selected/Placed Candidates -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-success-subtle text-success"><i class="fa-solid fa-award"></i></span>
+                    <span class="badge text-bg-success-subtle text-success">Placed</span>
+                </div>
+                <small>Placed Candidates</small>
+                <strong class="fs-3">{{ placed_count }}</strong>
+                <em>Hired students count</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Selection Rate -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-info-subtle text-info"><i class="fa-solid fa-chart-pie"></i></span>
+                    <span class="badge text-bg-info-subtle text-info">Rate</span>
+                </div>
+                <small>Selection Rate</small>
+                <strong class="fs-3">{{ selection_rate }}%</strong>
+                <em>Percent of hired students</em>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Details & Criteria -->
+    <div class="col-lg-4">
+        <!-- Drive Logistics -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-info-circle me-2 text-primary"></i>Campaign Overview</h3>
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-5 text-muted">Company</dt>
+                    <dd class="col-sm-7 fw-bold">{{ drive.company.name }}</dd>
+                    
+                    <dt class="col-sm-5 text-muted">Job Role</dt>
+                    <dd class="col-sm-7"><span class="badge text-bg-light border">{{ drive.job_role }}</span></dd>
+                    
+                    <dt class="col-sm-5 text-muted">CTC Offer</dt>
+                    <dd class="col-sm-7 fw-bold text-success">
+                        {% if drive.package_min_lpa and drive.package_max_lpa %}
+                        {{ drive.package_min_lpa }}–{{ drive.package_max_lpa }} LPA
+                        {% elif drive.package_max_lpa %}
+                        Up to {{ drive.package_max_lpa }} LPA
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-5 text-muted">Location</dt>
+                    <dd class="col-sm-7">{{ drive.location_type.value|replace('_', ' ')|title }}</dd>
+                    
+                    {% if drive.venue %}
+                    <dt class="col-sm-5 text-muted">Venue</dt>
+                    <dd class="col-sm-7">{{ drive.venue }}</dd>
+                    {% endif %}
+                    
+                    {% if drive.meeting_link %}
+                    <dt class="col-sm-5 text-muted">Meeting Link</dt>
+                    <dd class="col-sm-7"><a href="{{ drive.meeting_link }}" target="_blank" class="text-decoration-none">Join online</a></dd>
+                    {% endif %}
+                    
+                    <dt class="col-sm-5 text-muted">Drive Date</dt>
+                    <dd class="col-sm-7">{{ drive.drive_date.strftime('%d %b %Y') if drive.drive_date else 'Not scheduled' }}</dd>
+                    
+                    <dt class="col-sm-5 text-muted">Deadline</dt>
+                    <dd class="col-sm-7 text-danger fw-bold">{{ drive.registration_deadline.strftime('%d %b %Y') if drive.registration_deadline else 'Not set' }}</dd>
+                    
+                    <dt class="col-sm-5 text-muted">Status</dt>
+                    <dd class="col-sm-7">
+                        {% set badge_theme = 'secondary' %}
+                        {% if drive.status.value == 'published' %}{% set badge_theme = 'success' %}
+                        {% elif drive.status.value == 'ongoing' %}{% set badge_theme = 'warning' %}
+                        {% elif drive.status.value == 'registration_closed' %}{% set badge_theme = 'danger' %}
+                        {% elif drive.status.value == 'completed' %}{% set badge_theme = 'info' %}
+                        {% endif %}
+                        <span class="badge text-bg-{{ badge_theme }}-subtle text-{{ badge_theme }}">
+                            {{ drive.status.value|replace('_', ' ')|title }}
+                        </span>
+                    </dd>
+                </dl>
+                
+                <!-- Quick Status Operations -->
+                <div class="mt-3 pt-3 border-top d-flex gap-2 flex-wrap">
+                    {% if drive.status.value == 'draft' %}
+                    <form method="POST" action="{{ url_for('tpo.change_drive_status', drive_id=drive.id, status='published') }}" class="flex-grow-1">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success btn-sm w-100"><i class="fa-solid fa-bullhorn me-1"></i>Publish</button>
+                    </form>
+                    {% elif drive.status.value == 'published' %}
+                    <form method="POST" action="{{ url_for('tpo.change_drive_status', drive_id=drive.id, status='registration_closed') }}" class="flex-grow-1">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm w-100"><i class="fa-solid fa-lock me-1"></i>Close Reg</button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if drive.status.value in ['published', 'registration_closed'] %}
+                    <form method="POST" action="{{ url_for('tpo.change_drive_status', drive_id=drive.id, status='ongoing') }}" class="flex-grow-1">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-warning btn-sm w-100"><i class="fa-solid fa-spinner me-1"></i>Start ongoing</button>
+                    </form>
+                    {% elif drive.status.value == 'ongoing' %}
+                    <form method="POST" action="{{ url_for('tpo.change_drive_status', drive_id=drive.id, status='completed') }}" class="flex-grow-1">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-info btn-sm w-100"><i class="fa-solid fa-check-circle me-1"></i>Complete</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Target Branches -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-graduation-cap me-2 text-info"></i>Eligible Branches</h3>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for db_branch in drive.drive_branches.all() %}
+                    <span class="badge text-bg-light border p-2">{{ db_branch.branch.name }} ({{ db_branch.branch.code }})</span>
+                    {% else %}
+                    <span class="text-muted small">Open to all branches</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Eligibility Criteria -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-shield-halved me-2 text-warning"></i>Eligibility Limits</h3>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Minimum CGPA</span>
+                        <strong>{{ rules_summary.min_cgpa or '0.00' }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Maximum Backlogs</span>
+                        <strong>{{ rules_summary.max_backlogs or '0' }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Target Batch</span>
+                        <strong>{{ rules_summary.batch or 'Any' }}</strong>
+                    </li>
+                    {% if rules_summary.skills %}
+                    <li class="list-group-item px-0 pb-0">
+                        <span class="text-muted d-block mb-1">Required Skills</span>
+                        <span class="badge bg-primary-subtle text-primary border">{{ rules_summary.skills }}</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Process Rounds & Candidates -->
+    <div class="col-lg-8">
+        <!-- Job Description Card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-file-text me-2 text-primary"></i>Role Details & Description</h3>
+                <p class="mb-0 small" style="white-space: pre-line; line-height: 1.6;">{{ drive.job_description }}</p>
+            </div>
+        </div>
+
+        <!-- Interview Process Rounds -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="panel-header mb-3 border-bottom pb-2">
+                    <div>
+                        <h2>Interview Process Rounds</h2>
+                        <p class="mb-0">Configure sequence of interview stages</p>
+                    </div>
+                </div>
+                
+                <!-- Rounds Timeline list -->
+                <div class="timeline-process mb-4">
+                    {% if rounds %}
+                        {% for r_data in rounds %}
+                        {% set r = r_data.round %}
+                        <div class="d-flex align-items-start justify-content-between p-3 border rounded mb-2 bg-light-subtle">
+                            <div class="d-flex gap-3 align-items-center">
+                                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 2.2rem; height: 2.2rem; font-size: 1.1rem;">{{ r.sequence_order }}</span>
+                                <div>
+                                    <strong class="d-block">{{ r.round_name }}</strong>
+                                    <small class="text-muted">{{ r.round_type.value|replace('_', ' ')|title }}{% if r.is_eliminatory %} · <span class="text-danger">Eliminatory</span>{% endif %}{% if r.passing_score %} · Passing: {{ r.passing_score }}{% endif %}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('tpo.edit_round', drive_id=drive.id, round_id=r.id) }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <form method="POST" action="{{ url_for('tpo.delete_round', drive_id=drive.id, round_id=r.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this interview round? All candidate results registered under this round will be lost.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-trash-can"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4 text-muted border rounded bg-light-subtle">
+                            <i class="fa-solid fa-route fa-2x mb-2 text-muted opacity-50"></i>
+                            <p class="mb-0">No interview rounds defined yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Add Round Form trigger -->
+                <button class="btn btn-outline-primary btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#addRoundCollapse" aria-expanded="false" aria-controls="addRoundCollapse">
+                    <i class="fa-solid fa-plus me-1"></i>Add Interview Stage / Round
+                </button>
+                
+                <div class="collapse mt-3" id="addRoundCollapse">
+                    <div class="p-3 border rounded bg-light-subtle">
+                        <form method="POST" action="{{ url_for('tpo.add_round', drive_id=drive.id) }}">
+                            {{ round_form.hidden_tag() }}
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    {{ round_form.round_name.label(class="form-label") }}
+                                    {{ round_form.round_name(class="form-control") }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ round_form.round_type.label(class="form-label") }}
+                                    {{ round_form.round_type(class="form-select") }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ round_form.sequence_order.label(class="form-label") }}
+                                    {{ round_form.sequence_order(class="form-control", type="number", min=1, value=(rounds|length + 1)) }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ round_form.passing_score.label(class="form-label") }}
+                                    {{ round_form.passing_score(class="form-control", placeholder="e.g. 60.00") }}
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <div class="form-check mb-2">
+                                        {{ round_form.is_eliminatory(class="form-check-input") }}
+                                        {{ round_form.is_eliminatory.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    {{ round_form.description.label(class="form-label") }}
+                                    {{ round_form.description(class="form-control", rows=2, placeholder="Add instructions, test links, or details...") }}
+                                </div>
+                                <div class="col-12 d-flex justify-content-end gap-2">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#addRoundCollapse">Cancel</button>
+                                    {{ round_form.submit(class="btn btn-primary btn-sm px-3") }}
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registered Candidates Roster -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-users me-2 text-success"></i>Registered Candidates (Roster)</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle mb-0">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th>Student</th>
+                                <th>Branch</th>
+                                <th>CGPA</th>
+                                <th>Status</th>
+                                <th>Applied Date</th>
+                                <th class="text-end">Resume</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if applicants %}
+                                {% for app in applicants %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center">{{ app.student.first_name[:1]|upper }}</span>
+                                            <div>
+                                                <strong class="d-block">{{ app.student.full_name }}</strong>
+                                                <small class="text-muted">{{ app.student.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ app.student.branch.code }}</td>
+                                    <td><strong>{{ app.student.cgpa or 'N/A' }}</strong></td>
+                                    <td>
+                                        {% set app_badge = 'secondary' %}
+                                        {% if app.status.value in ['placed', 'selected', 'offered'] %}{% set app_badge = 'success' %}
+                                        {% elif app.status.value in ['shortlisted', 'interview_in_progress'] %}{% set app_badge = 'warning' %}
+                                        {% elif app.status.value == 'rejected' %}{% set app_badge = 'danger' %}
+                                        {% elif app.status.value == 'submitted' %}{% set app_badge = 'primary' %}
+                                        {% endif %}
+                                        <span class="badge text-bg-{{ app_badge }}-subtle text-{{ app_badge }}">
+                                            {{ app.status.value|replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                    <td><small>{{ app.applied_at.strftime('%d %b %Y') if app.applied_at else app.created_at.strftime('%d %b %Y') }}</small></td>
+                                    <td class="text-end">
+                                        {% if app.resume_id %}
+                                        <a href="{{ url_for('student.download_resume', resume_id=app.resume_id) }}" class="btn btn-outline-secondary btn-sm" title="Download Candidate Resume"><i class="fa-solid fa-file-arrow-down"></i></a>
+                                        {% else %}
+                                        <span class="text-muted small">No file</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No student applications registered yet.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

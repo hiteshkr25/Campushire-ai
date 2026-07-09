@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}System Error — CampusHire AI{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center p-3">
+    <div class="card glass-panel animated-card text-center border-0 p-4" style="max-width: 480px; border-radius: 20px;">
+        <div class="card-body">
+            <span class="bg-danger-subtle text-danger fs-3 d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 70px; height: 70px; border-radius: 50%;">
+                <i class="fa-solid fa-server"></i>
+            </span>
+            <h1 class="h3 fw-bold text-primary-emphasis mb-2">500 — System Error</h1>
+            <p class="text-muted mb-4">The server encountered an internal error or misconfiguration and was unable to complete your request.</p>
+            <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-sm px-4 py-2"><i class="fa-solid fa-arrow-left me-1"></i>Go to Homepage</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

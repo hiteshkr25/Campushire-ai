@@ -1,0 +1,116 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ title }} - CampusHire AI{% endblock %}
+{% block portal_heading %}{{ title }}{% endblock %}
+{% block portal_subheading %}Fill details to schedule or update candidate evaluation schedules.{% endblock %}
+{% block breadcrumb_current %}Interviews / Form{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('recruiter.interviews') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Dashboard</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-6">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                {% if schedule %}
+                <div class="alert alert-warning-subtle text-warning border mb-4 small p-3 rounded d-flex align-items-start gap-2">
+                    <span class="fs-5 mt-1"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                    <div>
+                        <strong class="d-block mb-1">Rescheduling Evaluation</strong>
+                        You are rescheduling the interview for candidate <strong>{{ schedule.application.student.full_name }}</strong> regarding drive round <strong>{{ schedule.round.round_name }}</strong>.
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="POST" action="" class="small">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Selection cards if creating -->
+                    {% if not schedule %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Hiring Drive Campaign</label>
+                        {{ form.drive_id(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                        {% for error in form.drive_id.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Evaluation Round</label>
+                        {{ form.round_id(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                        {% for error in form.round_id.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                        <small class="text-muted d-block mt-1">Make sure you have created rounds (Aptitude, Coding, Technical, etc.) in the Drive configuration.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Candidate Profile</label>
+                        {{ form.application_id(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                        {% for error in form.application_id.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <!-- Keep values hidden to avoid WTForms post validation fail on select constraints -->
+                    <div class="mb-3">
+                        <span class="text-muted d-block small">Hiring Drive:</span>
+                        <strong class="text-primary-emphasis">{{ schedule.round.drive.title }}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted d-block small">Evaluation Round:</span>
+                        <strong class="text-primary-emphasis">{{ schedule.round.round_name }}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted d-block small">Candidate:</span>
+                        <strong class="text-primary-emphasis">{{ schedule.application.student.full_name }}</strong>
+                    </div>
+                    {% endif %}
+
+                    <!-- Date inputs -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label text-muted">Start Date & Time</label>
+                            {{ form.scheduled_start(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="datetime-local") }}
+                            {% for error in form.scheduled_start.errors %}
+                            <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label text-muted">End Date & Time</label>
+                            {{ form.scheduled_end(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="datetime-local") }}
+                            {% for error in form.scheduled_end.errors %}
+                            <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Venue -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Physical Location (Venue)</label>
+                        {{ form.venue(class="form-control form-control-sm bg-transparent text-primary-emphasis", placeholder="e.g. Boardroom A / Campus Auditorium") }}
+                        {% for error in form.venue.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                        <small class="text-muted d-block mt-1">Provide for offline physical evaluations.</small>
+                    </div>
+
+                    <!-- Link -->
+                    <div class="mb-4">
+                        <label class="form-label text-muted">Virtual Meeting Link (URL)</label>
+                        {{ form.meeting_link(class="form-control form-control-sm bg-transparent text-primary-emphasis", placeholder="e.g. https://meet.google.com/abc-defg-hij") }}
+                        {% for error in form.meeting_link.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                        <small class="text-muted d-block mt-1">Provide for online virtual interviews.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100 p-2"><i class="fa-solid fa-save me-1"></i>Save Schedule</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

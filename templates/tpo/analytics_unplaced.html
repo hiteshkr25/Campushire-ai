@@ -1,0 +1,100 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Unplaced Student Analysis - CampusHire AI{% endblock %}
+{% block portal_heading %}Unplaced Student Analysis{% endblock %}
+{% block portal_subheading %}Review registered students who do not yet hold active placement offers. Focus recruitment outreach and skill updates.{% endblock %}
+{% block breadcrumb_current %}Analytics / Unplaced Students{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('tpo.analytics') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Analytics</a>
+<a href="{{ url_for('tpo.export_analytics', report_type='unplaced') }}" class="btn btn-danger btn-sm"><i class="fa-solid fa-file-csv me-1"></i>Export Unplaced List (CSV)</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Unplaced Branch breakdown -->
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+    <div class="card-body">
+        <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-chart-pie me-2 text-danger"></i>Unplaced Students Breakdown by Branch</h3>
+        <div class="row g-3">
+            {% for code, count in branch_counts.items() %}
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="p-3 border rounded bg-light-subtle text-center">
+                    <strong class="d-block fs-5 text-danger">{{ count }}</strong>
+                    <small class="text-muted">{{ code }} Branch</small>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12 text-center text-muted py-2">All students are placed!</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Unplaced student roster table -->
+<div class="card dashboard-panel glass-dashboard-card border-0">
+    <div class="card-body">
+        <div class="panel-header mb-3">
+            <h2>Unplaced Candidates Directory</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0 small">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Student</th>
+                        <th>Enrollment No.</th>
+                        <th>Branch</th>
+                        <th>Academic Record</th>
+                        <th>Batch</th>
+                        <th>Year</th>
+                        <th class="text-end">Verification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if unplaced %}
+                        {% for student in unplaced %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center">{{ student.first_name[:1]|upper }}</span>
+                                    <div>
+                                        <strong class="d-block">{{ student.full_name }}</strong>
+                                        <small class="text-muted">{{ student.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge text-bg-light border fw-bold">{{ student.enrollment_number }}</span></td>
+                            <td>{{ student.branch.name if student.branch else 'Unknown' }}</td>
+                            <td>
+                                <strong>{{ student.cgpa or 'N/A' }} CGPA</strong>
+                                <small class="text-muted d-block">{{ student.backlogs_count }} backlogs</small>
+                            </td>
+                            <td><strong>{{ student.batch }}</strong></td>
+                            <td>{{ student.graduation_year }}</td>
+                            <td class="text-end">
+                                {% set ver_status = student.profile_status.value %}
+                                {% set badge_type = 'secondary' %}
+                                {% if ver_status == 'verified' %}{% set badge_type = 'success' %}
+                                {% elif ver_status == 'pending_verification' %}{% set badge_type = 'warning' %}
+                                {% elif ver_status == 'rejected' %}{% set badge_type = 'danger' %}
+                                {% endif %}
+                                <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }}">
+                                    {{ ver_status|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-trophy fa-2x mb-3 text-warning"></i>
+                                <h3 class="h5">Outstanding! No unplaced students</h3>
+                                <p class="mb-0">All registered students have successfully obtained placements.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

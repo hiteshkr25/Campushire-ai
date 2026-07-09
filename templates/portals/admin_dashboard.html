@@ -1,0 +1,489 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}System Admin Dashboard - CampusHire AI{% endblock %}
+{% block portal_heading %}System Administrator Workspace{% endblock %}
+{% block portal_subheading %}Monitor system registrations, database statistics, security audits logs, and growth analytics.{% endblock %}
+{% block breadcrumb_current %}System Overview{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('admin.export_analytics') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-download me-1"></i>Export Analytics</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Admin Statistics Overview Cards -->
+<div class="row g-3 mb-4">
+    <!-- Total Users -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-primary-subtle text-primary"><i class="fa-solid fa-users"></i></span>
+                    <span class="badge text-bg-primary-subtle text-primary">{{ stats.active_users }} Active</span>
+                </div>
+                <small>Total Platform Users</small>
+                <strong>{{ stats.total_users }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placement Percentage -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-success-subtle text-success"><i class="fa-solid fa-percent"></i></span>
+                    <span class="badge text-bg-success-subtle text-success">Placements</span>
+                </div>
+                <small>Global Placement Rate</small>
+                <strong>{{ stats.placement_percentage }}%</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Drives -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-warning-subtle text-warning"><i class="fa-solid fa-briefcase"></i></span>
+                    <span class="badge text-bg-warning-subtle text-warning">Campaigns</span>
+                </div>
+                <small>Active Drives</small>
+                <strong>{{ stats.active_drives }} <span class="fs-6 text-muted">/ {{ stats.total_drives }} total</span></strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-info-subtle text-info"><i class="fa-solid fa-server"></i></span>
+                    <span class="badge text-bg-success-subtle text-success">Online</span>
+                </div>
+                <small>Database Health</small>
+                <strong>Operational</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Charts Section -->
+<div class="row g-4 mb-4">
+    <!-- User Growth (Line) -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-chart-line me-2 text-primary"></i>User Growth Trend</h3>
+                <div style="height: 180px;">
+                    <canvas id="userGrowthChart" aria-label="User registrations growth timeline" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placement Growth (Line) -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-chart-line me-2 text-success"></i>Milestone Placements Trend</h3>
+                <div style="height: 180px;">
+                    <canvas id="placementGrowthChart" aria-label="Milestone placements timeline" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Distribution (Doughnut) -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-chart-pie me-2 text-info"></i>User Roles Distribution</h3>
+                <div style="height: 180px;">
+                    <canvas id="userDistributionChart" aria-label="User distribution role breakdown" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offer Status (Pie) -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-chart-pie me-2 text-warning"></i>Extended Offers Status</h3>
+                <div style="height: 180px;">
+                    <canvas id="offersRatiosChart" aria-label="Offers acceptance ratio chart" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Participation (Bar) -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-building me-2 text-danger"></i>Recruiter Participation Campaigns</h3>
+                <div style="height: 180px;">
+                    <canvas id="companyTrendsChart" aria-label="Recruiter campaigns bar chart" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Activity Chart (Failed vs Successful logins) -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-shield-halved me-2 text-primary"></i>Authentication Activities</h3>
+                <div style="height: 180px;">
+                    <canvas id="monthlyActivityChart" aria-label="Logins activity bar chart" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details & Health Lists Panel (Tabbed) -->
+<div class="row g-4 mb-4">
+    <!-- Left panel: Health & Tables Roster -->
+    <div class="col-lg-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <ul class="nav nav-tabs border-bottom mb-3" id="adminTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active small py-2" id="db-tab" data-bs-toggle="tab" data-bs-target="#db-panel" type="button" role="tab" aria-controls="db-panel" aria-selected="true"><i class="fa-solid fa-database me-1"></i>Database Rows</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link small py-2" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-panel" type="button" role="tab" aria-controls="security-panel" aria-selected="false"><i class="fa-solid fa-lock-open me-1"></i>Security Audit</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link small py-2" id="health-tab" data-bs-toggle="tab" data-bs-target="#health-panel" type="button" role="tab" aria-controls="health-panel" aria-selected="false"><i class="fa-solid fa-heartpulse me-1"></i>System Metrics</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="adminTabsContent">
+                    <!-- Tab 1: Database rows counts -->
+                    <div class="tab-pane fade show active" id="db-panel" role="tabpanel" aria-labelledby="db-tab">
+                        <div class="row g-3 small">
+                            {% for table, rows in system.db_rows.items() %}
+                            <div class="col-sm-6 col-md-4 col-xl-3">
+                                <div class="p-3 border rounded bg-light-subtle d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <span class="text-muted d-block text-capitalize">{{ table|replace('_', ' ') }}</span>
+                                        <strong class="fs-5 text-primary-emphasis">{{ rows }}</strong>
+                                    </div>
+                                    <i class="fa-solid fa-table text-primary opacity-50"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Security Failed Logins logs -->
+                    <div class="tab-pane fade" id="security-panel" role="tabpanel" aria-labelledby="security-tab">
+                        <div class="row g-3">
+                            <div class="col-md-6 border-end">
+                                <h4 class="h7 text-danger border-bottom pb-1 mb-2"><i class="fa-solid fa-triangle-exclamation me-1"></i>Recent Failed Authentication Attempts</h4>
+                                <ul class="list-group list-group-flush small bg-transparent">
+                                    {% for attempt in security.failed_attempts %}
+                                    <li class="list-group-item bg-transparent border-0 px-0 d-flex justify-content-between">
+                                        <div>
+                                            <strong class="text-danger">Failed Login</strong>
+                                            <span class="text-muted d-block mt-0.5">IP: {{ attempt.ip_address }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ attempt.created_at.strftime('%d %b %H:%M') }}</small>
+                                    </li>
+                                    {% else %}
+                                    <li class="list-group-item bg-transparent border-0 text-muted px-0 py-3">No failed login attempts logged.</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h4 class="h7 text-success border-bottom pb-1 mb-2"><i class="fa-solid fa-circle-check me-1"></i>Recent Logins History</h4>
+                                <ul class="list-group list-group-flush small bg-transparent">
+                                    {% for log in security.recent_logins %}
+                                    <li class="list-group-item bg-transparent border-0 px-0 d-flex justify-content-between">
+                                        <div>
+                                            <strong class="text-success">Successful Login</strong>
+                                            <span class="text-muted d-block mt-0.5">IP: {{ log.ip_address }} (Role: {{ log.user.role.value if log.user else 'Unknown' }})</span>
+                                        </div>
+                                        <small class="text-muted">{{ log.created_at.strftime('%d %b %H:%M') }}</small>
+                                    </li>
+                                    {% else %}
+                                    <li class="list-group-item bg-transparent border-0 text-muted px-0 py-3">No logins logged.</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: System metrics checklists -->
+                    <div class="tab-pane fade" id="health-panel" role="tabpanel" aria-labelledby="health-tab">
+                        <div class="row g-3 small">
+                            <div class="col-sm-6 col-md-4">
+                                <span class="text-muted d-block">Daily Active Users (DAU)</span>
+                                <strong class="fs-5 text-primary-emphasis">{{ system.dau }} active today</strong>
+                            </div>
+                            <div class="col-sm-6 col-md-4">
+                                <span class="text-muted d-block">Storage Space (Resumes size)</span>
+                                <strong class="fs-5 text-primary-emphasis">{{ (system.resume_storage_bytes / 1024 / 1024)|round(2) }} MB</strong>
+                            </div>
+                            <div class="col-sm-6 col-md-4">
+                                <span class="text-muted d-block">Resume Uploads count</span>
+                                <strong class="fs-5 text-primary-emphasis">{{ system.resume_uploads }} PDFs</strong>
+                            </div>
+                            <div class="col-sm-6 col-md-4">
+                                <span class="text-muted d-block">Offer letter uploads</span>
+                                <strong class="fs-5 text-primary-emphasis">{{ system.offer_uploads }} letters</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right panel: Quick Actions box -->
+    <div class="col-lg-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-gears me-2 text-primary"></i>System Admin Controls</h3>
+                <ul class="list-group list-group-flush bg-transparent">
+                    <li class="list-group-item bg-transparent border-0 px-0 mb-1 py-1">
+                        <a href="{{ url_for('admin.users_list') }}" class="btn btn-outline-primary btn-sm w-100 p-2 text-start d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-users-gear me-2"></i>Manage User Roles</span>
+                            <i class="fa-solid fa-arrow-right small"></i>
+                        </a>
+                    </li>
+                    <li class="list-group-item bg-transparent border-0 px-0 mb-1 py-1">
+                        <a href="{{ url_for('admin.users_list', status='locked') }}" class="btn btn-outline-success btn-sm w-100 p-2 text-start d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-shield-halved me-2"></i>Review Access Requests</span>
+                            <i class="fa-solid fa-arrow-right small"></i>
+                        </a>
+                    </li>
+                    <li class="list-group-item bg-transparent border-0 px-0 mb-1 py-1">
+                        <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-outline-warning btn-sm w-100 p-2 text-start d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-receipt me-2"></i>System Operations Log</span>
+                            <i class="fa-solid fa-arrow-right small"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Platform Mutation Events logs -->
+<div class="card dashboard-panel glass-dashboard-card border-0">
+    <div class="card-body">
+        <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>System Activities Mutation Timeline</h3>
+        <div class="timeline-logs px-2 small">
+            {% for log in audit_events %}
+            <div class="d-flex gap-3 mb-3 border-start ps-3 position-relative">
+                <span class="timeline-dot position-absolute start-0 translate-middle rounded-circle bg-primary" style="width: 8px; height: 8px; top: 8px;"></span>
+                <div>
+                    <strong class="text-primary-emphasis">{{ log.action.value|replace('_', ' ')|title }}</strong>
+                    <span class="text-muted">by user: {{ log.user.email if log.user else 'System' }}</span>
+                    <p class="mb-0 text-muted mt-0.5">Entity: {{ log.entity_type }} (ID: {{ log.entity_id }})</p>
+                    <small class="text-muted d-block mt-0.5">{{ log.created_at.strftime('%d %b %Y, %I:%M %p') }}</small>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">No database mutations logged.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const css = getComputedStyle(document.documentElement);
+    const textColor = css.getPropertyValue('--dash-text').trim() || '#162033';
+    const mutedColor = css.getPropertyValue('--dash-muted').trim() || '#64708a';
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = 'rgba(100, 112, 138, 0.12)';
+
+    // Datasets
+    const analytics = {{ analytics|tojson }};
+    const stats = {{ stats|tojson }};
+    const system = {{ system|tojson }};
+
+    // 1. User Growth Line Chart
+    const ctxGrowth = document.getElementById('userGrowthChart');
+    if (ctxGrowth) {
+        new Chart(ctxGrowth, {
+            type: 'line',
+            data: {
+                labels: analytics.user_growth.map(d => d.month),
+                datasets: [{
+                    label: 'Registrations',
+                    data: analytics.user_growth.map(d => d.count),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: mutedColor } },
+                    y: { beginAtZero: true, ticks: { color: mutedColor } }
+                }
+            }
+        });
+    }
+
+    // 2. Placement Growth Line Chart
+    const ctxPlacement = document.getElementById('placementGrowthChart');
+    if (ctxPlacement) {
+        new Chart(ctxPlacement, {
+            type: 'line',
+            data: {
+                labels: analytics.placement_trends.map(d => d.month),
+                datasets: [{
+                    label: 'Placements',
+                    data: analytics.placement_trends.map(d => d.count),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: mutedColor } },
+                    y: { beginAtZero: true, ticks: { color: mutedColor } }
+                }
+            }
+        });
+    }
+
+    // 3. User Distribution Doughnut Chart
+    const ctxDist = document.getElementById('userDistributionChart');
+    if (ctxDist) {
+        new Chart(ctxDist, {
+            type: 'doughnut',
+            data: {
+                labels: ['Students', 'Recruiters', 'TPO Admins', 'System Admins'],
+                datasets: [{
+                    data: [stats.students, stats.recruiters, stats.tpos, stats.admins],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#6b7280'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 4. Offer Status Pie Chart
+    const ctxOffers = document.getElementById('offersRatiosChart');
+    if (ctxOffers) {
+        new Chart(ctxOffers, {
+            type: 'pie',
+            data: {
+                labels: ['Accepted', 'Pending', 'Declined'],
+                datasets: [{
+                    data: [
+                        analytics.offers_ratios.accepted,
+                        analytics.offers_ratios.pending,
+                        analytics.offers_ratios.declined
+                    ],
+                    backgroundColor: ['#10b981', '#3b82f6', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 5. Company Participation Bar Chart
+    const ctxCompanies = document.getElementById('companyTrendsChart');
+    if (ctxCompanies && analytics.company_trends.length > 0) {
+        new Chart(ctxCompanies, {
+            type: 'bar',
+            data: {
+                labels: analytics.company_trends.map(c => c.name),
+                datasets: [{
+                    label: 'Drives Conducted',
+                    data: analytics.company_trends.map(c => c.drives),
+                    backgroundColor: '#ef4444',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: mutedColor } },
+                    y: { beginAtZero: true, ticks: { color: mutedColor, stepSize: 1 } }
+                }
+            }
+        });
+    } else if (ctxCompanies) {
+        new Chart(ctxCompanies, {
+            type: 'bar',
+            data: {
+                labels: ['Partner A', 'Partner B'],
+                datasets: [{
+                    label: 'No data',
+                    data: [0, 0],
+                    backgroundColor: '#64708a',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 6. Monthly Logins Activity Chart (Failed vs Successful)
+    const ctxActivity = document.getElementById('monthlyActivityChart');
+    if (ctxActivity) {
+        new Chart(ctxActivity, {
+            type: 'bar',
+            data: {
+                labels: ['Successful Logins', 'Failed Attempts'],
+                datasets: [{
+                    data: [system.total_logins, system.failed_logins],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: mutedColor } },
+                    y: { beginAtZero: true, ticks: { color: mutedColor, stepSize: 1 } }
+                }
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

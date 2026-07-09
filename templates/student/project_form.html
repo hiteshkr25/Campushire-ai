@@ -1,0 +1,27 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ title }} - CampusHire AI{% endblock %}
+{% block portal_heading %}{{ title }}{% endblock %}
+{% block portal_subheading %}Maintain project details for recruiter review and ATS scoring.{% endblock %}
+{% block breadcrumb_current %}{{ title }}{% endblock %}
+
+{% block portal_actions %}<a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Profile</a>{% endblock %}
+
+{% block portal_content %}
+<form method="POST" novalidate class="card dashboard-panel glass-dashboard-card border-0 profile-edit-card">
+    <div class="card-body">
+        {{ form.hidden_tag() }}
+        <div class="row g-3">
+            <div class="col-12">{{ form.title.label(class="form-label") }}{{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}{% for error in form.title.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+            <div class="col-12">{{ form.description.label(class="form-label") }}{{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="4") }}{% for error in form.description.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+            <div class="col-12">{{ form.tech_stack.label(class="form-label") }}{{ form.tech_stack(class="form-control" + (" is-invalid" if form.tech_stack.errors else ""), placeholder="Flask, PostgreSQL, Bootstrap") }}{% for error in form.tech_stack.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+            <div class="col-md-6">{{ form.project_url.label(class="form-label") }}{{ form.project_url(class="form-control" + (" is-invalid" if form.project_url.errors else "")) }}{% for error in form.project_url.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+            <div class="col-md-6">{{ form.repository_url.label(class="form-label") }}{{ form.repository_url(class="form-control" + (" is-invalid" if form.repository_url.errors else "")) }}{% for error in form.repository_url.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+            <div class="col-md-6">{{ form.start_date.label(class="form-label") }}{{ form.start_date(class="form-control" + (" is-invalid" if form.start_date.errors else "")) }}{% for error in form.start_date.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+            <div class="col-md-6">{{ form.end_date.label(class="form-label") }}{{ form.end_date(class="form-control" + (" is-invalid" if form.end_date.errors else "")) }}{% for error in form.end_date.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}</div>
+            <div class="col-12"><div class="form-check">{{ form.is_ongoing(class="form-check-input") }}{{ form.is_ongoing.label(class="form-check-label") }}</div></div>
+        </div>
+        <div class="d-flex gap-2 justify-content-end mt-4"><a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary">Cancel</a>{{ form.submit(class="btn btn-primary") }}</div>
+    </div>
+</form>
+{% endblock %}

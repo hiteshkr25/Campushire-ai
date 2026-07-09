@@ -1,0 +1,139 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ title }} - CampusHire AI{% endblock %}
+{% block portal_heading %}{{ title }}{% endblock %}
+{% block portal_subheading %}{% if company %}Modify existing profile details for {{ company.name }}{% else %}Register a new corporate partner in the college recruitment workspace.{% endif %}{% endblock %}
+{% block breadcrumb_current %}{% if company %}{{ company.name }} / Edit{% else %}New Company{% endif %}{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('tpo.companies') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Directory</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9 col-xl-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-building me-2 text-primary"></i>Company Information</h2>
+                    
+                    <div class="row g-3 mb-4">
+                        <!-- Company Name -->
+                        <div class="col-md-6">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" ~ (" is-invalid" if form.name.errors else ""), placeholder="e.g. Acme Corporation") }}
+                            {% for error in form.name.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Legal Name -->
+                        <div class="col-md-6">
+                            {{ form.legal_name.label(class="form-label") }}
+                            {{ form.legal_name(class="form-control" ~ (" is-invalid" if form.legal_name.errors else ""), placeholder="e.g. Acme Corp Private Limited") }}
+                            {% for error in form.legal_name.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Website -->
+                        <div class="col-md-6">
+                            {{ form.website.label(class="form-label") }}
+                            {{ form.website(class="form-control" ~ (" is-invalid" if form.website.errors else ""), placeholder="https://example.com") }}
+                            {% for error in form.website.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Industry -->
+                        <div class="col-md-6">
+                            {{ form.industry.label(class="form-label") }}
+                            {{ form.industry(class="form-control" ~ (" is-invalid" if form.industry.errors else ""), placeholder="e.g. Information Technology") }}
+                            {% for error in form.industry.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Company Size -->
+                        <div class="col-md-6">
+                            {{ form.company_size.label(class="form-label") }}
+                            {{ form.company_size(class="form-select" ~ (" is-invalid" if form.company_size.errors else "")) }}
+                            {% for error in form.company_size.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Headquarters Location -->
+                        <div class="col-md-3">
+                            {{ form.hq_city.label(class="form-label") }}
+                            {{ form.hq_city(class="form-control" ~ (" is-invalid" if form.hq_city.errors else ""), placeholder="e.g. Mumbai") }}
+                            {% for error in form.hq_city.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="col-md-3">
+                            {{ form.hq_country.label(class="form-label") }}
+                            {{ form.hq_country(class="form-control" ~ (" is-invalid" if form.hq_country.errors else ""), placeholder="e.g. India") }}
+                            {% for error in form.hq_country.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-address-book me-2 text-success"></i>Contact & Operations</h2>
+                    
+                    <div class="row g-3 mb-4">
+                        <!-- Contact Email -->
+                        <div class="col-md-6">
+                            {{ form.contact_email.label(class="form-label") }}
+                            {{ form.contact_email(class="form-control" ~ (" is-invalid" if form.contact_email.errors else ""), placeholder="corporate-relations@example.com") }}
+                            {% for error in form.contact_email.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Verification Status -->
+                        <div class="col-md-6">
+                            {{ form.verification_status.label(class="form-label") }}
+                            {{ form.verification_status(class="form-select" ~ (" is-invalid" if form.verification_status.errors else "")) }}
+                            {% for error in form.verification_status.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Active / Hiring Partner Checkbox -->
+                        <div class="col-12 mt-4">
+                            <div class="form-check form-switch p-3 border rounded bg-light-subtle d-flex align-items-center justify-content-between">
+                                <div>
+                                    {{ form.is_active(class="form-check-input ms-0 me-3", style="width: 2.5rem; height: 1.25rem;") }}
+                                    <label class="form-check-label fw-bold" for="is_active">Active Placement Partner</label>
+                                    <small class="d-block text-muted">Toggle off to pause current hiring and drives for this company</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-paragraph me-2 text-info"></i>About Company</h2>
+                    
+                    <!-- Description -->
+                    <div class="mb-4">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control" ~ (" is-invalid" if form.description.errors else ""), rows=5, placeholder="Provide a summary of company operations, culture, and core technologies...") }}
+                        {% for error in form.description.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                        <a href="{{ url_for('tpo.companies') }}" class="btn btn-outline-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

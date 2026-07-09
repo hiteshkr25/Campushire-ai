@@ -1,0 +1,424 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Placement Drives - CampusHire AI{% endblock %}
+{% block portal_heading %}Placement Drives{% endblock %}
+{% block portal_subheading %}Browse published campus drives, filter by package and location, and check your eligibility before applying.{% endblock %}
+{% block breadcrumb_current %}Drives{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.applications') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-file-lines me-1"></i>My Applications</a>
+{% endblock %}
+
+{% block portal_content %}
+<style>
+    @keyframes lock-float {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-6px);
+        }
+    }
+
+    .premium-lock-icon-wrap {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(220, 53, 69, 0.06) !important;
+        color: #dc3545 !important;
+        border-radius: 50%;
+        width: 64px;
+        height: 64px;
+        margin-bottom: 1.25rem;
+        border: 1px solid rgba(220, 53, 69, 0.12);
+        animation: lock-float 2.5s ease-in-out infinite;
+    }
+
+    .access-gate-container {
+        position: relative;
+        min-height: 760px; /* Increased from 520px to prevent clipping card overlay */
+        overflow: visible !important;
+    }
+
+    .access-gate-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+        padding: 1.5rem;
+    }
+
+    .access-panel-card {
+        width: 100%;
+        max-width: 520px;
+        border-radius: 12px !important;
+        border: 1px solid rgba(100, 112, 138, 0.15) !important;
+        background-color: var(--dash-card-bg, #ffffff) !important;
+        box-shadow: 0 12px 32px -12px rgba(16, 24, 40, 0.1), 
+                    0 1px 3px rgba(16, 24, 40, 0.02) !important;
+        overflow: visible !important; /* Ensure children can render outside boundary without clipping */
+    }
+
+    .access-panel-card .card-body {
+        padding: 3rem 2.5rem !important; /* Comfortable card padding */
+    }
+
+    .access-panel-card h2 {
+        line-height: 1.45 !important; /* Prevent font clipping from the top */
+        padding-top: 0.25rem !important;
+        margin-top: 0.75rem !important;
+        margin-bottom: 0.75rem !important;
+        overflow: visible !important;
+    }
+
+    [data-theme="dark"] .access-panel-card {
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.35), 
+                    0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .checklist-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--dash-muted, #64708a);
+        font-weight: 700;
+        border-bottom: 1px solid rgba(100, 112, 138, 0.1);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem; /* More space before list */
+    }
+
+    .checklist-item-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.65rem 0.85rem;
+        border-radius: 8px;
+        border: 1px solid rgba(100, 112, 138, 0.06);
+        background-color: rgba(100, 112, 138, 0.02);
+        margin-bottom: 0.5rem; /* Spacious list spacing */
+    }
+
+    .benefit-info-card {
+        border: 1px solid rgba(100, 112, 138, 0.08) !important;
+        background-color: rgba(100, 112, 138, 0.01) !important;
+        border-radius: 8px !important;
+        padding: 0.85rem 1rem !important;
+        margin-top: 1.5rem; /* Space before information card */
+    }
+
+    @media (max-width: 575.98px) {
+        .access-gate-container {
+            min-height: 980px; /* Checklist stacks vertically on mobile, needing more room */
+        }
+        .access-gate-overlay {
+            padding: 0.75rem;
+        }
+        .access-panel-card .card-body {
+            padding: 2rem 1.5rem !important;
+        }
+        .checklist-item-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+        }
+        .checklist-item-row .badge {
+            align-self: flex-end;
+        }
+        .premium-lock-icon-wrap {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+        }
+        .premium-lock-icon-wrap i {
+            font-size: 1.25rem !important;
+        }
+    }
+</style>
+
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('student.drives') }}" class="drive-filter-form row g-3 align-items-end">
+            <div class="col-lg-4">
+                {{ form.q.label(class="form-label") }}
+                {{ form.q(class="form-control", placeholder="Search company, role, or drive title", disabled=locked) }}
+            </div>
+            <div class="col-md-6 col-lg-2">
+                {{ form.location_type.label(class="form-label") }}
+                {{ form.location_type(class="form-select", disabled=locked) }}
+            </div>
+            <div class="col-md-6 col-lg-2">
+                {{ form.min_package.label(class="form-label") }}
+                {{ form.min_package(class="form-control", placeholder="e.g. 6.00", disabled=locked) }}
+            </div>
+            <div class="col-md-6 col-lg-2">
+                {{ form.eligibility.label(class="form-label") }}
+                {{ form.eligibility(class="form-select", disabled=locked) }}
+            </div>
+            <div class="col-md-6 col-lg-2">
+                {{ form.sort.label(class="form-label") }}
+                {{ form.sort(class="form-select", disabled=locked) }}
+            </div>
+            <div class="col-12 d-flex gap-2 flex-wrap">
+                {{ form.submit(class="btn btn-primary btn-sm", disabled=locked) }}
+                {% if not locked %}
+                <a href="{{ url_for('student.drives') }}" class="btn btn-outline-secondary btn-sm">Clear filters</a>
+                {% else %}
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Clear filters</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if locked %}
+<!-- ACCESS GATE PANELS -->
+<div class="access-gate-container overflow-hidden rounded-3 p-1">
+    <!-- Blurred skeleton cards grid background -->
+    <div class="drive-grid" style="filter: blur(6px); opacity: 0.35; pointer-events: none; min-height: 480px; user-select: none;">
+        {% for i in range(4) %}
+        <article class="card dashboard-panel glass-dashboard-card border-0 drive-card h-100">
+            <div class="card-body">
+                <div class="drive-card-header">
+                    <span class="company-logo bg-secondary text-secondary">XX</span>
+                    <div class="drive-card-title">
+                        <strong class="bg-secondary text-secondary rounded d-inline-block" style="width: 150px;">Placeholder Opp</strong>
+                        <small class="bg-secondary text-secondary rounded d-inline-block mt-1" style="width: 100px;">Company · Role</small>
+                    </div>
+                </div>
+                <div class="drive-meta-grid my-3">
+                    <div class="bg-secondary text-secondary rounded" style="height: 12px; width: 60px;"></div>
+                    <div class="bg-secondary text-secondary rounded" style="height: 12px; width: 60px;"></div>
+                    <div class="bg-secondary text-secondary rounded" style="height: 12px; width: 60px;"></div>
+                    <div class="bg-secondary text-secondary rounded" style="height: 12px; width: 60px;"></div>
+                </div>
+                <div class="bg-secondary text-secondary rounded mt-2" style="height: 24px; width: 100%;"></div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+
+    <!-- Active transparent click capture overlay trigger -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" data-bs-toggle="modal" data-bs-target="#lockedModal" style="cursor: pointer; z-index: 10;"></div>
+
+    <!-- Centered Access panel overlay -->
+    <div class="access-gate-overlay">
+        <div class="card access-panel-card border-0 text-start">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="premium-lock-icon-wrap">
+                        <i class="fa-solid fa-lock fs-3"></i>
+                    </div>
+                    <h2 class="h4 fw-bold">Placement Drives Locked</h2>
+                    <p class="text-muted small mb-0">Complete your profile and get verified by the Training & Placement Office (TPO) to unlock campus placement opportunities.</p>
+                </div>
+
+                <!-- CHECKLIST -->
+                <div class="mb-4">
+                    <h3 class="checklist-title"><i class="fa-solid fa-clipboard-list text-primary me-2"></i>Unlock Checklist</h3>
+                    <ul class="list-unstyled d-flex flex-column mb-0">
+                        <li class="checklist-item-row small">
+                            <span>
+                                <i class="fa-solid {% if checklist.personal %}fa-circle-check text-success{% else %}fa-circle-xmark text-danger{% endif %} me-2"></i>
+                                Personal Information
+                            </span>
+                            <span class="badge {% if checklist.personal %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                                {% if checklist.personal %}✓ Profile Complete{% else %}❌ Complete Profile{% endif %}
+                            </span>
+                        </li>
+                        <li class="checklist-item-row small">
+                            <span>
+                                <i class="fa-solid {% if checklist.academic %}fa-circle-check text-success{% else %}fa-circle-xmark text-danger{% endif %} me-2"></i>
+                                Academic Details
+                            </span>
+                            <span class="badge {% if checklist.academic %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                                {% if checklist.academic %}✓ Profile Complete{% else %}❌ Complete Profile{% endif %}
+                            </span>
+                        </li>
+                        <li class="checklist-item-row small">
+                            <span>
+                                <i class="fa-solid {% if checklist.resume %}fa-circle-check text-success{% else %}fa-circle-xmark text-danger{% endif %} me-2"></i>
+                                Resume Uploaded
+                            </span>
+                            <span class="badge {% if checklist.resume %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                                {% if checklist.resume %}✓ Profile Complete{% else %}❌ Complete Profile{% endif %}
+                            </span>
+                        </li>
+                        <li class="checklist-item-row small">
+                            <span>
+                                <i class="fa-solid {% if checklist.skills %}fa-circle-check text-success{% else %}fa-circle-xmark text-danger{% endif %} me-2"></i>
+                                Skills Listed
+                            </span>
+                            <span class="badge {% if checklist.skills %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                                {% if checklist.skills %}✓ Profile Complete{% else %}❌ Complete Profile{% endif %}
+                            </span>
+                        </li>
+                        <li class="checklist-item-row small">
+                            <span>
+                                <i class="fa-solid {% if checklist.projects %}fa-circle-check text-success{% else %}fa-circle-xmark text-danger{% endif %} me-2"></i>
+                                Projects Added
+                            </span>
+                            <span class="badge {% if checklist.projects %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                                {% if checklist.projects %}✓ Profile Complete{% else %}❌ Complete Profile{% endif %}
+                            </span>
+                        </li>
+                        <li class="checklist-item-row small mb-0">
+                            <span>
+                                <i class="fa-solid {% if checklist.verification %}fa-circle-check text-success{% else %}fa-hourglass-start text-warning{% endif %} me-2"></i>
+                                TPO Verification Status
+                            </span>
+                            <span class="badge {% if checklist.verification %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning-emphasis{% endif %}">
+                                {% if checklist.verification %}✓ Verified{% else %}⏳ TPO Verification Pending{% endif %}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- PRIMARY BUTTON -->
+                <div class="mb-3">
+                    {% if profile_completion < 100 %}
+                    <a href="{{ url_for('student.profile') }}" class="btn btn-primary btn-sm w-100 fw-bold py-2">
+                        <i class="fa-solid fa-user-pen me-2"></i>Complete Profile ({{ profile_completion }}%)
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('student.profile') }}" class="btn btn-warning btn-sm w-100 fw-bold py-2 text-dark">
+                        <i class="fa-solid fa-clock-rotate-left me-2"></i>View Verification Status
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- INFORMATIONAL BENEFIT CARD -->
+                <div class="benefit-info-card small text-muted">
+                    <strong class="text-dark d-block mb-1"><i class="fa-solid fa-circle-info me-1"></i>Once verified, you will be able to:</strong>
+                    <ul class="mb-0 ps-3">
+                        <li>View all placement drives & check eligibility</li>
+                        <li>Apply to companies & track applications</li>
+                        <li>Receive interview invitations & job offers</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LOCKED BOOTSTRAP MODAL -->
+<div class="modal fade" id="lockedModal" tabindex="-1" aria-labelledby="lockedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered text-start">
+        <div class="modal-content glass-dashboard-card border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="lockedModalLabel"><i class="fa-solid fa-lock text-danger me-2"></i>Placement Drives Locked</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p>Your profile has not yet been verified by the Training & Placement Office.</p>
+                <p class="text-muted small">Complete your profile details, upload your resume, and wait for official TPO verification before accessing campus placement drives.</p>
+                
+                <div class="mt-4 p-3 bg-light rounded-3">
+                    <strong class="d-block mb-2 text-dark small">Current Status:</strong>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small text-muted">Profile Completion:</span>
+                        <strong class="small">{{ profile_completion }}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-muted">TPO Verification:</span>
+                        <strong class="small text-warning-emphasis">
+                            {% if checklist.verification %}
+                            <span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>
+                            {% else %}
+                            <span class="text-warning-emphasis"><i class="fa-solid fa-clock me-1"></i>Pending Review</span>
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                <a href="{{ url_for('student.profile') }}" class="btn btn-primary btn-sm flex-fill">Go to Profile</a>
+                <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+    {% if drive_items %}
+    <div class="drive-grid">
+        {% for item in drive_items %}
+        {% set drive = item.drive %}
+        <article class="card dashboard-panel glass-dashboard-card border-0 drive-card h-100">
+            <div class="card-body">
+                <div class="drive-card-header">
+                    <span class="company-logo bg-primary-subtle text-primary">{{ drive.company.name[:2]|upper }}</span>
+                    <div class="drive-card-title">
+                        <strong>{{ drive.title }}</strong>
+                        <small>{{ drive.company.name }} · {{ drive.job_role }}</small>
+                    </div>
+                    {% if item.application %}
+                    <span class="badge text-bg-{{ status_badge(item.application.status) }}-subtle text-{{ status_badge(item.application.status) }}">
+                        {{ item.application.status.value|replace('_', ' ')|title }}
+                    </span>
+                    {% elif item.registration_open %}
+                    <span class="badge text-bg-success-subtle text-success">Open</span>
+                    {% else %}
+                    <span class="badge text-bg-secondary-subtle text-secondary">Closed</span>
+                    {% endif %}
+                </div>
+
+                <div class="drive-meta-grid">
+                    <div>
+                        <small>Package</small>
+                        <strong>
+                            {% if drive.package_min_lpa and drive.package_max_lpa %}
+                            {{ drive.package_min_lpa }}–{{ drive.package_max_lpa }} LPA
+                            {% elif drive.package_max_lpa %}
+                            Up to {{ drive.package_max_lpa }} LPA
+                            {% elif drive.package_min_lpa %}
+                            From {{ drive.package_min_lpa }} LPA
+                            {% else %}
+                            Not disclosed
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div>
+                        <small>Location</small>
+                        <strong>{{ drive.location_type.value|replace('_', ' ')|title }}</strong>
+                    </div>
+                    <div>
+                        <small>Deadline</small>
+                        <strong>{{ drive.registration_deadline.strftime('%d %b %Y') if drive.registration_deadline else 'Not set' }}</strong>
+                    </div>
+                    <div>
+                        <small>Vacancies</small>
+                        <strong>{{ drive.vacancies }}</strong>
+                    </div>
+                </div>
+
+                <div class="drive-eligibility-pill {{ 'eligible' if item.eligibility.eligible else 'not-eligible' }}">
+                    <i class="fa-solid {{ 'fa-circle-check' if item.eligibility.eligible else 'fa-circle-xmark' }}"></i>
+                    <span>{{ 'Eligible' if item.eligibility.eligible else 'Not eligible' }}</span>
+                </div>
+
+                <div class="drive-card-actions">
+                    <a href="{{ url_for('student.drive_detail', drive_id=drive.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fa-solid fa-eye me-1"></i>View details
+                    </a>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card dashboard-panel glass-dashboard-card border-0">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-briefcase fa-2x text-muted mb-3"></i>
+            <h2 class="h5">No drives found</h2>
+            <p class="text-muted mb-0">Try adjusting your filters or check back when new drives are published.</p>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+{% endblock %}

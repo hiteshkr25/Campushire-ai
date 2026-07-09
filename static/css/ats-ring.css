@@ -1,0 +1,141 @@
+/* ═══════════════════════════════════════════════════════════════
+   ATS Animated Progress Ring
+   ───────────────────────────────────────────────────────────────
+   SVG viewBox: "0 0 120 120"  cx=60 cy=60  r=48
+   Circumference: 2π × 48 ≈ 301.593
+   Stroke-width: 10 SVG units  →  ~11.7px at 140 CSS px (md)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Wrapper ──────────────────────────────────────────────────── */
+.ats-ring-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Size variants */
+.ats-ring-wrap.ats-ring--mini { width: 72px;  height: 72px; }
+.ats-ring-wrap.ats-ring--sm   { width: 110px; height: 110px; }
+.ats-ring-wrap.ats-ring--md   { width: 140px; height: 140px; }
+.ats-ring-wrap.ats-ring--lg   { width: 168px; height: 168px; }
+
+/* Default (no explicit size class) → md */
+.ats-ring-wrap:not([class*="ats-ring--"]) { width: 140px; height: 140px; }
+
+/* ── SVG ─────────────────────────────────────────────────────── */
+.ats-ring-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible; /* let glow bleed past viewBox edge */
+}
+
+/* ── Track (background circle) ───────────────────────────────── */
+.ats-ring-track {
+  fill: none;
+  stroke: var(--ch-border, #e5e7eb);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+[data-bs-theme="dark"] .ats-ring-track {
+  stroke: var(--ch-border, #2a2a2a);
+  opacity: 0.45;
+}
+
+/* ── Progress arc ────────────────────────────────────────────── */
+.ats-ring-progress {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+
+  /* Start at 12 o'clock instead of 3 o'clock */
+  transform-origin: 60px 60px;
+  transform: rotate(-90deg);
+
+  /* Hidden initially; JS animates to target */
+  stroke-dasharray: 301.593;
+  stroke-dashoffset: 301.593;
+
+  /* Smooth eased animation */
+  transition:
+    stroke-dashoffset 1.2s cubic-bezier(0.35, 0, 0.15, 1),
+    stroke 0.3s ease;
+}
+
+/* Score-band colours + glow (only on the progress arc) */
+.ats-ring-progress.ats-ring--red {
+  stroke: #ef4444;
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.60));
+}
+.ats-ring-progress.ats-ring--orange {
+  stroke: #f97316;
+  filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.60));
+}
+.ats-ring-progress.ats-ring--blue {
+  stroke: #3b82f6;
+  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.60));
+}
+.ats-ring-progress.ats-ring--green {
+  stroke: #22c55e;
+  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.60));
+}
+
+/* Stronger glow in dark mode */
+[data-bs-theme="dark"] .ats-ring-progress.ats-ring--red    { filter: drop-shadow(0 0 6px rgba(239, 68,  68,  0.80)); }
+[data-bs-theme="dark"] .ats-ring-progress.ats-ring--orange { filter: drop-shadow(0 0 6px rgba(249, 115, 22,  0.80)); }
+[data-bs-theme="dark"] .ats-ring-progress.ats-ring--blue   { filter: drop-shadow(0 0 6px rgba(59,  130, 246, 0.80)); }
+[data-bs-theme="dark"] .ats-ring-progress.ats-ring--green  { filter: drop-shadow(0 0 6px rgba(34,  197, 94,  0.80)); }
+
+/* ── Label (centred over the SVG) ────────────────────────────── */
+.ats-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  line-height: 1;
+  user-select: none;
+}
+
+.ats-ring-score {
+  display: block;
+  font-weight: 600;
+  color: var(--ch-text-base, #1a1a2e);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.ats-ring-denom {
+  display: block;
+  color: var(--ch-text-muted, #6b7280);
+  font-weight: 400;
+  margin-top: 0.1em;
+}
+
+/* Per-size font scaling */
+.ats-ring--mini .ats-ring-score  { font-size: 0.9rem; }
+.ats-ring--mini .ats-ring-denom  { font-size: 0.55rem; }
+
+.ats-ring--sm   .ats-ring-score  { font-size: 1.5rem; }
+.ats-ring--sm   .ats-ring-denom  { font-size: 0.7rem; }
+
+.ats-ring--md   .ats-ring-score  { font-size: 2rem; }
+.ats-ring--md   .ats-ring-denom  { font-size: 0.8rem; }
+
+.ats-ring--lg   .ats-ring-score  { font-size: 2.5rem; }
+.ats-ring--lg   .ats-ring-denom  { font-size: 0.875rem; }
+
+/* Dark-mode label colours */
+[data-bs-theme="dark"] .ats-ring-score { color: var(--ch-text-base, #f1f5f9); }
+[data-bs-theme="dark"] .ats-ring-denom { color: var(--ch-text-muted, #94a3b8); }
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .ats-ring-progress {
+    transition: none;
+  }
+}

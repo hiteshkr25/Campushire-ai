@@ -1,0 +1,264 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Interview Dashboard - CampusHire AI{% endblock %}
+{% block portal_heading %}Interview Dashboard{% endblock %}
+{% block portal_subheading %}Schedule student evaluations, reschedule rounds, track pipelines status, and manage interview evaluations.{% endblock %}
+{% block breadcrumb_current %}Interviews{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('recruiter.schedule_interview') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-calendar-plus me-1"></i>Schedule Interview</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Interview Stats Grid -->
+<div class="row g-3 mb-4">
+    <!-- Scheduled widget -->
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-primary-subtle text-primary"><i class="fa-solid fa-calendar-day"></i></span>
+                    <span class="badge text-bg-primary-subtle text-primary">Pending</span>
+                </div>
+                <small>Scheduled Interviews</small>
+                <strong>{{ stats.scheduled }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed widget -->
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-success-subtle text-success"><i class="fa-solid fa-circle-check"></i></span>
+                    <span class="badge text-bg-success-subtle text-success">Finished</span>
+                </div>
+                <small>Completed Evaluations</small>
+                <strong>{{ stats.completed }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancelled widget -->
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-danger-subtle text-danger"><i class="fa-solid fa-calendar-xmark"></i></span>
+                    <span class="badge text-bg-danger-subtle text-danger">Updates</span>
+                </div>
+                <small>Cancelled / Rescheduled</small>
+                <strong>{{ stats.cancelled }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Left panel: Search & Filters -->
+    <div class="col-lg-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-magnifying-glass me-2 text-primary"></i>Filter Evaluations Calendar</h3>
+                <form method="GET" action="{{ url_for('recruiter.interviews') }}" class="row g-2 small">
+                    <div class="col-sm-4">
+                        <label class="form-label text-muted">Candidate Name</label>
+                        <input type="text" name="q" value="{{ filters.q }}" class="form-control form-control-sm bg-transparent text-primary-emphasis" placeholder="Name or Roll No...">
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label text-muted">Drive Campaign</label>
+                        <select name="drive_id" class="form-select form-select-sm bg-transparent text-primary-emphasis">
+                            <option value="">All Drives</option>
+                            {% for d in drives %}
+                            <option value="{{ d.id }}" {% if filters.drive_id == d.id|string %}selected{% endif %}>{{ d.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label text-muted">Round Type</label>
+                        <select name="round_type" class="form-select form-select-sm bg-transparent text-primary-emphasis">
+                            <option value="">All Types</option>
+                            <option value="aptitude" {% if filters.round_type == 'aptitude' %}selected{% endif %}>Aptitude</option>
+                            <option value="coding" {% if filters.round_type == 'coding' %}selected{% endif %}>Coding</option>
+                            <option value="technical" {% if filters.round_type == 'technical' %}selected{% endif %}>Technical</option>
+                            <option value="hr" {% if filters.round_type == 'hr' %}selected{% endif %}>HR</option>
+                            <option value="managerial" {% if filters.round_type == 'managerial' %}selected{% endif %}>Managerial</option>
+                            <option value="other" {% if filters.round_type == 'other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label text-muted">Schedule Status</label>
+                        <select name="status" class="form-select form-select-sm bg-transparent text-primary-emphasis">
+                            <option value="">All Statuses</option>
+                            <option value="scheduled" {% if filters.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                            <option value="rescheduled" {% if filters.status == 'rescheduled' %}selected{% endif %}>Rescheduled</option>
+                            <option value="completed" {% if filters.status == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="cancelled" {% if filters.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            <option value="no_show" {% if filters.status == 'no_show' %}selected{% endif %}>Absent / No Show</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-8 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Search</button>
+                        <a href="{{ url_for('recruiter.interviews') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-undo me-1"></i>Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right panel: Outcome Doughnut Chart -->
+    <div class="col-lg-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-chart-pie me-2 text-success"></i>Evaluation Outcome Percentages</h3>
+                <div style="height: 140px;">
+                    <canvas id="outcomesPieChart" aria-label="Interview outcomes breakdown" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interviews Roster Table -->
+<div class="card dashboard-panel glass-dashboard-card border-0">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0 small">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Round Details</th>
+                        <th>Placement Drive</th>
+                        <th>Scheduled Date</th>
+                        <th>Logistics</th>
+                        <th>Schedule Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for schedule in interviews %}
+                    {% set student = schedule.application.student %}
+                    {% set round = schedule.round %}
+                    <tr>
+                        <!-- Candidate avatar & email -->
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center">{{ student.first_name[:1]|upper }}</span>
+                                <div>
+                                    <strong class="d-block">{{ student.full_name }}</strong>
+                                    <small class="text-muted d-block">{{ student.user.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Round name & Type badge -->
+                        <td>
+                            <strong>{{ round.round_name }}</strong>
+                            <span class="badge text-bg-light border d-block mt-1 w-fit">{{ round.round_type.value|title }}</span>
+                        </td>
+
+                        <!-- Placement Drive -->
+                        <td>{{ round.drive.title }}</td>
+
+                        <!-- Date/Time -->
+                        <td>
+                            <small class="fw-bold text-primary-emphasis d-block">{{ schedule.scheduled_start.strftime('%d %b %Y') }}</small>
+                            <small class="text-muted">{{ schedule.scheduled_start.strftime('%I:%M %p') }} - {{ schedule.scheduled_end.strftime('%I:%M %p') }}</small>
+                        </td>
+
+                        <!-- Logistics -->
+                        <td>
+                            {% if schedule.meeting_link %}
+                            <a href="{{ schedule.meeting_link }}" target="_blank" class="btn btn-link btn-sm p-0"><i class="fa-solid fa-video me-1"></i>Virtual Link</a>
+                            {% elif schedule.venue %}
+                            <span class="badge text-bg-info-subtle text-info border"><i class="fa-solid fa-location-dot me-1"></i>{{ schedule.venue }}</span>
+                            {% else %}
+                            <span class="text-muted">Virtual</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status badge -->
+                        <td>
+                            {% set status_val = schedule.status.value %}
+                            {% set badge_type = 'secondary' %}
+                            {% if status_val == 'completed' or status_val == 'confirmed' %}{% set badge_type = 'success' %}
+                            {% elif status_val == 'scheduled' or status_val == 'rescheduled' %}{% set badge_type = 'warning' %}
+                            {% elif status_val == 'cancelled' or status_val == 'no_show' %}{% set badge_type = 'danger' %}
+                            {% endif %}
+                            <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }}">
+                                {{ status_val|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+
+                        <!-- Action buttons -->
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                <a href="{{ url_for('recruiter.candidate_timeline', application_id=schedule.application_id) }}" class="btn btn-outline-info btn-sm" title="View Candidate Timeline"><i class="fa-solid fa-timeline"></i></a>
+                                
+                                {% if status_val in ('scheduled', 'rescheduled') %}
+                                <a href="{{ url_for('recruiter.evaluate_interview', schedule_id=schedule.id) }}" class="btn btn-success btn-sm"><i class="fa-solid fa-gavel me-1"></i>Evaluate</a>
+                                <a href="{{ url_for('recruiter.reschedule_interview', schedule_id=schedule.id) }}" class="btn btn-outline-warning btn-sm" title="Reschedule"><i class="fa-solid fa-clock-rotate-left"></i></a>
+                                <form method="POST" action="{{ url_for('recruiter.cancel_interview', schedule_id=schedule.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this interview schedule?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancel"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                                {% else %}
+                                <a href="{{ url_for('recruiter.evaluate_interview', schedule_id=schedule.id) }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-eye me-1"></i>View Score</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-calendar-check fa-2x mb-3 text-muted opacity-50"></i>
+                            <h4 class="h5">No evaluations scheduled</h4>
+                            <p class="mb-0">Click "Schedule Interview" to initiate candidate rounds.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const ratioData = {{ stats.ratios|tojson }};
+    const ctx = document.getElementById('outcomesPieChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pass', 'Fail', 'Hold', 'Absent'],
+                datasets: [{
+                    data: [ratioData.passed, ratioData.failed, ratioData.hold, ratioData.absent],
+                    backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#6b7280'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 6,
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--dash-text').trim() || '#162033'
+                        }
+                    }
+                }
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

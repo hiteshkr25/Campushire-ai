@@ -1,0 +1,300 @@
+{% extends "portals/base_portal.html" %}
+{% from "components/ats_ring.html" import ats_ring %}
+
+{% block body_class %}dashboard-page student-dashboard-page{% endblock %}
+{% block main_class %}dashboard-root student-dashboard-root{% endblock %}
+
+{% block title %}Student Dashboard - CampusHire AI{% endblock %}
+{% block portal_heading %}Student Dashboard{% endblock %}
+{% block portal_subheading %}Welcome, {{ current_user.student_profile.full_name if current_user.student_profile else current_user.email }}. Track ATS readiness, applications, interviews, and placement progress from one focused workspace.{% endblock %}
+{% block breadcrumb_current %}Student Overview{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.resumes') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-file-lines me-1"></i>View Resume</a>
+<a href="{{ url_for('student.profile') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-arrow-up me-1"></i>Update Profile</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3">
+        <section class="metric-card">
+            <div class="metric-card-header">
+                <span class="metric-icon metric-icon-primary"><i class="fa-solid fa-ranking-star"></i></span>
+                <span class="status-pill status-pill-primary">ATS</span>
+            </div>
+            <p class="metric-label">ATS score</p>
+            <h3>{{ ats_info.score }}</h3>
+            <div class="progress stat-progress" role="progressbar" aria-label="ATS score {{ ats_info.score }} out of 100" aria-valuenow="{{ ats_info.score }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: {{ ats_info.score }}%"></div>
+            </div>
+            <p class="metric-note">{{ ats_info.message }}</p>
+        </section>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <section class="metric-card">
+            <div class="metric-card-header">
+                <span class="metric-icon metric-icon-success"><i class="fa-solid fa-file-circle-check"></i></span>
+                <span class="status-pill status-pill-success">Live</span>
+            </div>
+            <p class="metric-label">Active applications</p>
+            <h3>{{ application_summary.active if application_summary else 0 }}</h3>
+            <div class="progress stat-progress" role="progressbar" aria-label="Active applications" aria-valuenow="{{ application_summary.active if application_summary else 0 }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-primary" style="width: {{ [application_summary.active * 10, 100]|min if application_summary else 0 }}%"></div>
+            </div>
+            <p class="metric-note">{{ application_summary.total if application_summary else 0 }} total application{{ '' if application_summary and application_summary.total == 1 else 's' }}</p>
+        </section>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <section class="metric-card">
+            <div class="metric-card-header">
+                <span class="metric-icon metric-icon-warning"><i class="fa-solid fa-calendar-check"></i></span>
+                <span class="status-pill status-pill-warning">Soon</span>
+            </div>
+            <p class="metric-label">Upcoming interviews</p>
+            <h3>2</h3>
+            <div class="progress stat-progress" role="progressbar" aria-label="Interview readiness" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-primary" style="width: 70%"></div>
+            </div>
+            <p class="metric-note">Next interview tomorrow</p>
+        </section>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <section class="metric-card">
+            <div class="metric-card-header">
+                <span class="metric-icon metric-icon-info"><i class="fa-solid fa-user-check"></i></span>
+                <span class="status-pill status-pill-info">Profile</span>
+            </div>
+            <p class="metric-label">Profile completion</p>
+            <h3>{{ profile_completion if profile_completion is defined else 0 }}%</h3>
+            <div class="progress stat-progress" role="progressbar" aria-label="Profile completion" aria-valuenow="{{ profile_completion if profile_completion is defined else 0 }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-primary" style="width: {{ profile_completion if profile_completion is defined else 0 }}%"></div>
+            </div>
+            <p class="metric-note">Complete your profile to improve eligibility matches</p>
+        </section>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-7">
+        <section class="panel-card h-100">
+            <div class="panel-card-body">
+                <div class="panel-card-header">
+                    <div>
+                        <h2>Placement performance</h2>
+                        <p>ATS score, profile progress, and active drive trends.</p>
+                    </div>
+                </div>
+                <div class="student-chart-wrap">
+                    <canvas id="studentPerformanceChart" aria-label="Student placement performance chart" role="img"></canvas>
+                </div>
+            </div>
+        </section>
+    </div>
+    <div class="col-xl-5">
+        <section class="panel-card h-100">
+            <div class="panel-card-body">
+                <div class="panel-card-header">
+                    <div>
+                        <h2>ATS checklist</h2>
+                        <p>Key resume actions to improve match quality.</p>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-center">
+                    {{ ats_ring(score=ats_info.score, size="md") }}
+                </div>
+                <ul class="student-checklist mt-4">
+                    {% for item in ats_checklist %}
+                    <li class="{{ 'done' if item.done else '' }}">
+                        <i class="fa-solid {{ 'fa-check' if item.done else 'fa-plus' }}"></i> {{ item.label }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-4">
+        <section class="panel-card h-100">
+            <div class="panel-card-body">
+                <div class="panel-card-header">
+                    <div>
+                        <h2>Active applications</h2>
+                        <p>Live drive progress by role.</p>
+                    </div>
+                </div>
+                <div class="application-list">
+                    {% if recent_applications %}
+                    {% for application in recent_applications %}
+                    {% set drive = application.drive %}
+                    <div class="application-card">
+                        <span class="company-logo">{{ drive.company.name[:2]|upper }}</span>
+                        <div>
+                            <strong>{{ drive.company.name }}</strong>
+                            <small>{{ drive.job_role }}</small>
+                        </div>
+                        <span class="status-pill status-pill-{{ 'warning' if application.status.value == 'interview_in_progress' else ('success' if application.status.value == 'shortlisted' else 'primary') }}">{{ application.status.value|replace('_', ' ')|title }}</span>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted small mb-0">No active applications yet. <a href="{{ url_for('student.drives') }}">Browse drives</a> to get started.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-4">
+        <section class="panel-card h-100">
+            <div class="panel-card-body">
+                <div class="panel-card-header">
+                    <div>
+                        <h2>Placement timeline</h2>
+                        <p>Upcoming milestones in your placement journey.</p>
+                    </div>
+                </div>
+                <ol class="placement-timeline">
+                    <li class="complete">
+                        <span></span>
+                        <div><strong>Profile verified</strong><small>Completed by TPO</small></div>
+                    </li>
+                    <li class="active">
+                        <span></span>
+                        <div><strong>Nexora technical round</strong><small>Tomorrow, 10:30 AM</small></div>
+                    </li>
+                    <li>
+                        <span></span>
+                        <div><strong>QuantaVerse assignment</strong><small>Due Friday</small></div>
+                    </li>
+                    <li>
+                        <span></span>
+                        <div><strong>Offer decision window</strong><small>Expected next week</small></div>
+                    </li>
+                </ol>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-4">
+        <section class="panel-card h-100">
+            <div class="panel-card-body">
+                <div class="panel-card-header">
+                    <div>
+                        <h2>Notifications</h2>
+                        <p>Latest drive and TPO updates.</p>
+                    </div>
+                    <span class="status-pill status-pill-danger">4 new</span>
+                </div>
+                <div class="student-notification-list">
+                    <div class="student-notification unread">
+                        <i class="fa-solid fa-calendar-day"></i>
+                        <div><strong>Interview scheduled</strong><small>Nexora Labs technical round tomorrow.</small></div>
+                    </div>
+                    <div class="student-notification unread">
+                        <i class="fa-solid fa-file-circle-check"></i>
+                        <div><strong>Application shortlisted</strong><small>QuantaVerse moved you to assignment stage.</small></div>
+                    </div>
+                    <div class="student-notification">
+                        <i class="fa-solid fa-bullhorn"></i>
+                        <div><strong>TPO announcement</strong><small>Pre-placement talk starts at 4:00 PM.</small></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    var chartCanvas = document.getElementById('studentPerformanceChart');
+    if (!chartCanvas || !window.Chart) {
+        return;
+    }
+
+    var css = getComputedStyle(document.documentElement);
+    var textColor = css.getPropertyValue('--dash-text').trim() || '#162033';
+    var mutedColor = css.getPropertyValue('--dash-muted').trim() || '#64708a';
+    var primaryColor = css.getPropertyValue('--dash-primary').trim() || '#4f46e5';
+    var accentColor = css.getPropertyValue('--dash-accent').trim() || '#06b6d4';
+
+    new Chart(chartCanvas, {
+        type: 'line',
+        data: {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+            datasets: [
+                {
+                    label: 'ATS Score',
+                    data: [68, 71, 75, 78, 80, 82],
+                    borderColor: primaryColor,
+                    backgroundColor: 'rgba(79, 70, 229, 0.14)',
+                    tension: 0.42,
+                    fill: true,
+                    pointRadius: 4
+                },
+                {
+                    label: 'Profile Completion',
+                    data: [58, 64, 72, 78, 84, 86],
+                    borderColor: accentColor,
+                    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+                    tension: 0.42,
+                    fill: true,
+                    pointRadius: 4
+                },
+                {
+                    label: 'Applications',
+                    data: [1, 2, 3, 5, 6, 8],
+                    borderColor: '#14b8a6',
+                    backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                    tension: 0.42,
+                    yAxisID: 'applications',
+                    pointRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor,
+                        usePointStyle: true,
+                        boxWidth: 8
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                    padding: 12,
+                    cornerRadius: 12
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: mutedColor },
+                    grid: { color: 'rgba(100, 112, 138, 0.14)' }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: { color: mutedColor },
+                    grid: { color: 'rgba(100, 112, 138, 0.14)' }
+                },
+                applications: {
+                    position: 'right',
+                    min: 0,
+                    max: 10,
+                    ticks: { color: mutedColor, stepSize: 2 },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

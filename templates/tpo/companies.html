@@ -1,0 +1,188 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Company Partners - CampusHire AI{% endblock %}
+{% block portal_heading %}Company Management{% endblock %}
+{% block portal_subheading %}Manage corporate hiring partners, review recruiter verification statuses, and view recruitment statistics.{% endblock %}
+{% block breadcrumb_current %}Companies{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('tpo.create_company') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus me-1"></i>Add Company</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Corporate Directory Stats -->
+<div class="row g-3 mb-4">
+    <!-- Total Corporate Partners -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-primary-subtle text-primary"><i class="fa-solid fa-building"></i></span>
+                    <span class="badge text-bg-primary-subtle text-primary">Global</span>
+                </div>
+                <small>Total Partners</small>
+                <strong>{{ stats.total }}</strong>
+                <em>Corporate relationships</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Verified Partners -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-success-subtle text-success"><i class="fa-solid fa-building-circle-check"></i></span>
+                    <span class="badge text-bg-success-subtle text-success">Verified</span>
+                </div>
+                <small>Verified Partners</small>
+                <strong>{{ stats.verified }}</strong>
+                <em>Active and approved</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pending Verification -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-danger-subtle text-danger"><i class="fa-solid fa-shield-halved"></i></span>
+                    {% if stats.pending > 0 %}
+                    <span class="badge text-bg-danger-subtle text-danger">Pending</span>
+                    {% else %}
+                    <span class="badge text-bg-secondary-subtle text-secondary">None</span>
+                    {% endif %}
+                </div>
+                <small>Pending Approval</small>
+                <strong>{{ stats.pending }}</strong>
+                <em>Awaiting TPO validation</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Hiring Partners -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-info-subtle text-info"><i class="fa-solid fa-handshake"></i></span>
+                    <span class="badge text-bg-info-subtle text-info">Active</span>
+                </div>
+                <small>Hiring Partners</small>
+                <strong>{{ stats.active }} <span class="fs-6 text-muted">/ {{ stats.inactive }} inactive</span></strong>
+                <em>Actively hiring this season</em>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('tpo.companies') }}" class="row g-3 align-items-end">
+            <div class="col-lg-4">
+                {{ search_form.q.label(class="form-label") }}
+                {{ search_form.q(class="form-control", placeholder="Search by name, legal name, industry, HQ") }}
+            </div>
+            <div class="col-md-6 col-lg-3">
+                {{ search_form.verification.label(class="form-label") }}
+                {{ search_form.verification(class="form-select") }}
+            </div>
+            <div class="col-md-6 col-lg-3">
+                {{ search_form.active.label(class="form-label") }}
+                {{ search_form.active(class="form-select") }}
+            </div>
+            <div class="col-12 d-flex gap-2">
+                {{ search_form.submit(class="btn btn-primary btn-sm") }}
+                <a href="{{ url_for('tpo.companies') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Companies Directory Grid -->
+<div class="card dashboard-panel glass-dashboard-card border-0">
+    <div class="card-body">
+        <div class="panel-header mb-3">
+            <h2>Corporate Partners Directory</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Company</th>
+                        <th>Industry</th>
+                        <th>HQ Location</th>
+                        <th>Verification</th>
+                        <th>Hiring status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if companies %}
+                        {% for company in companies %}
+                        {% set logo_url = get_company_logo_url(company.id) %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if logo_url %}
+                                        <img src="{{ logo_url }}" alt="{{ company.name }} logo" class="company-logo border object-fit-contain" style="background: white;">
+                                    {% else %}
+                                        <span class="company-logo bg-primary-subtle text-primary fs-6 d-flex align-items-center justify-content-center">{{ company.name[:2]|upper }}</span>
+                                    {% endif %}
+                                    <div>
+                                        <strong class="d-block">{{ company.name }}</strong>
+                                        {% if company.website %}
+                                            <a href="{{ company.website }}" target="_blank" class="small text-decoration-none text-muted"><i class="fa-solid fa-link small me-1"></i>{{ company.website|replace('https://', '')|replace('http://', '')|replace('www.', '') }}</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge text-bg-light border">{{ company.industry or 'N/A' }}</span></td>
+                            <td>{{ company.hq_city or 'N/A' }}{% if company.hq_country %}, {{ company.hq_country }}{% endif %}</td>
+                            <td>
+                                {% set ver_status = company.verification_status.value %}
+                                {% set badge_type = 'secondary' %}
+                                {% if ver_status == 'approved' %}{% set badge_type = 'success' %}
+                                {% elif ver_status == 'pending' %}{% set badge_type = 'warning' %}
+                                {% elif ver_status == 'rejected' %}{% set badge_type = 'danger' %}
+                                {% endif %}
+                                <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }}">
+                                    {{ ver_status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if company.is_active %}
+                                <span class="badge text-bg-success-subtle text-success"><i class="fa-solid fa-circle-check me-1"></i>Active</span>
+                                {% else %}
+                                <span class="badge text-bg-secondary-subtle text-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ url_for('tpo.view_company', company_id=company.id) }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-eye me-1"></i>Profile</a>
+                                    <a href="{{ url_for('tpo.edit_company', company_id=company.id) }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-pen-to-square"></i></a>
+                                    <form method="POST" action="{{ url_for('tpo.delete_company', company_id=company.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this company partner? All statistics records will be retained, but the company listing and recruiters will be removed.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-trash-can"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-building-slash fa-2x mb-3 opacity-50"></i>
+                                <h3 class="h5">No companies found</h3>
+                                <p class="mb-0">Try adjusting your filters or add a new corporate partner.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Application History - CampusHire AI{% endblock %}
+{% block portal_heading %}Application History{% endblock %}
+{% block portal_subheading %}Track submitted applications, current status, and withdrawn drives in one place.{% endblock %}
+{% block breadcrumb_current %}Applications{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.drives') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-briefcase me-1"></i>Browse drives</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <small>Total applications</small>
+                <strong>{{ summary.total }}</strong>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <small>Active applications</small>
+                <strong>{{ summary.active }}</strong>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <small>Placed</small>
+                <strong>{{ summary.placed }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('student.applications') }}" class="row g-3 align-items-end">
+            <div class="col-lg-5">
+                {{ form.q.label(class="form-label") }}
+                {{ form.q(class="form-control", placeholder="Search company or role") }}
+            </div>
+            <div class="col-lg-4">
+                {{ form.status.label(class="form-label") }}
+                {{ form.status(class="form-select") }}
+            </div>
+            <div class="col-lg-3 d-flex gap-2">
+                {{ form.submit(class="btn btn-primary btn-sm") }}
+                <a href="{{ url_for('student.applications') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if applications %}
+<div class="application-list">
+    {% for application in applications %}
+    {% set drive = application.drive %}
+    <article class="application-card">
+        <span class="company-logo bg-primary-subtle text-primary">{{ drive.company.name[:2]|upper }}</span>
+        <div>
+            <strong>{{ drive.title }}</strong>
+            <small>{{ drive.company.name }} · {{ drive.job_role }}</small>
+            <small class="text-muted">Applied {{ application.applied_at.strftime('%d %b %Y') if application.applied_at else '—' }}</small>
+        </div>
+        <span class="badge text-bg-{{ status_badge(application.status) }}-subtle text-{{ status_badge(application.status) }}">
+            {{ application.status.value|replace('_', ' ')|title }}
+        </span>
+        <a href="{{ url_for('student.application_detail', application_id=application.id) }}" class="btn btn-sm btn-outline-primary">
+            Details
+        </a>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card dashboard-panel glass-dashboard-card border-0">
+    <div class="card-body text-center py-5">
+        <i class="fa-solid fa-file-lines fa-2x text-muted mb-3"></i>
+        <h2 class="h5">No applications yet</h2>
+        <p class="text-muted">Browse placement drives and submit your first application.</p>
+        <a href="{{ url_for('student.drives') }}" class="btn btn-primary btn-sm">Browse drives</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

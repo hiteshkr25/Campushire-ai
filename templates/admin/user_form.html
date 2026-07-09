@@ -1,0 +1,211 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ title }} - CampusHire AI{% endblock %}
+{% block portal_heading %}{{ title }}{% endblock %}
+{% block portal_subheading %}Fill registration details below to setup or update user profile configurations.{% endblock %}
+{% block breadcrumb_current %}Users / Form{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('admin.users_list') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Directory</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row justify-content-center text-start">
+    <div class="col-lg-10 col-xl-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <form method="POST" action="" class="small">
+                    {{ form.hidden_tag() }}
+
+                    <h3 class="h6 border-bottom pb-2 mb-3 text-primary"><i class="fa-solid fa-user-lock me-2"></i>1. Core Account Credentials</h3>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted fw-bold">Email Address</label>
+                            {{ form.email(class="form-control form-control-sm bg-transparent text-primary-emphasis", placeholder="e.g. user@college.edu") }}
+                            {% for error in form.email.errors %}
+                            <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted fw-bold">Password {% if edit_mode %}(Leave blank to keep unchanged){% endif %}</label>
+                            {{ form.password(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="password", placeholder="Enter secure password...") }}
+                            {% for error in form.password.errors %}
+                            <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted fw-bold">System Role Selection</label>
+                            {% if edit_mode %}
+                            <!-- Role cannot be changed if editing a profile to maintain data models integrity -->
+                            <input type="text" class="form-control form-control-sm bg-light-subtle text-muted" value="{{ user_role|title }}" readonly>
+                            <div style="display:none;">{{ form.role() }}</div>
+                            {% else %}
+                            {{ form.role(class="form-select form-select-sm bg-transparent text-primary-emphasis", id="roleSelect") }}
+                            {% endif %}
+                            {% for error in form.role.errors %}
+                            <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end mb-2">
+                            <div class="form-check form-switch">
+                                {{ form.is_active(class="form-check-input", type="checkbox", id="isActiveCheck") }}
+                                <label class="form-check-label text-muted fw-bold" for="isActiveCheck">Account Active / Enabled</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end mb-2">
+                            <div class="form-check form-switch">
+                                {{ form.is_verified(class="form-check-input", type="checkbox", id="isVerifiedCheck") }}
+                                <label class="form-check-label text-muted fw-bold" for="isVerifiedCheck">Profile Verified</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Role-Specific Profiles fields -->
+                    
+                    <!-- STUDENT section -->
+                    <div id="studentFields" class="profile-fields-section mb-4" style="display: none;">
+                        <h3 class="h6 border-bottom pb-2 mb-3 text-success"><i class="fa-solid fa-graduation-cap me-2"></i>2. Student Academic Profile</h3>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">First Name</label>
+                                {{ form.student_first_name(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Last Name</label>
+                                {{ form.student_last_name(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">College Campus</label>
+                                {{ form.student_college_id(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Academic Branch / Course</label>
+                                {{ form.student_branch_id(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Enrollment Number</label>
+                                {{ form.student_enrollment_number(class="form-control form-control-sm bg-transparent text-primary-emphasis", placeholder="e.g. EN123456") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-muted">Batch (e.g. 2023-2027)</label>
+                                {{ form.student_batch(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-muted">Graduation Year</label>
+                                {{ form.student_graduation_year(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="number") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Contact Phone</label>
+                                {{ form.student_phone(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RECRUITER section -->
+                    <div id="recruiterFields" class="profile-fields-section mb-4" style="display: none;">
+                        <h3 class="h6 border-bottom pb-2 mb-3 text-success"><i class="fa-solid fa-briefcase me-2"></i>2. Recruiter Professional Profile</h3>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">First Name</label>
+                                {{ form.recruiter_first_name(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Last Name</label>
+                                {{ form.recruiter_first_name(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Hiring Company Partner</label>
+                                {{ form.recruiter_company_id(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Corporate Designation</label>
+                                {{ form.recruiter_designation(class="form-control form-control-sm bg-transparent text-primary-emphasis", placeholder="e.g. Technical Recruiter") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Contact Phone</label>
+                                {{ form.recruiter_phone(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TPO section -->
+                    <div id="tpoFields" class="profile-fields-section mb-4" style="display: none;">
+                        <h3 class="h6 border-bottom pb-2 mb-3 text-success"><i class="fa-solid fa-handshake me-2"></i>2. TPO Academic Profile</h3>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">First Name</label>
+                                {{ form.tpo_first_name(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Last Name</label>
+                                {{ form.tpo_last_name(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">College Campus</label>
+                                {{ form.tpo_college_id(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Academic Designation</label>
+                                {{ form.tpo_designation(class="form-control form-control-sm bg-transparent text-primary-emphasis", placeholder="e.g. Placement Officer") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Department</label>
+                                {{ form.tpo_department(class="form-control form-control-sm bg-transparent text-primary-emphasis", placeholder="e.g. Training & Placements") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Contact Phone</label>
+                                {{ form.tpo_phone(class="form-control form-control-sm bg-transparent text-primary-emphasis") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100 p-2 mt-3"><i class="fa-solid fa-save me-1"></i>Save User Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+(function () {
+    const roleSelect = document.getElementById('roleSelect');
+    const studentSec = document.getElementById('studentFields');
+    const recruiterSec = document.getElementById('recruiterFields');
+    const tpoSec = document.getElementById('tpoFields');
+
+    function toggleFields(role) {
+        // Hide all first
+        studentSec.style.display = 'none';
+        recruiterSec.style.display = 'none';
+        tpoSec.style.display = 'none';
+
+        if (role === 'student') {
+            studentSec.style.display = 'block';
+        } else if (role === 'recruiter') {
+            recruiterSec.style.display = 'block';
+        } else if (role === 'tpo') {
+            tpoSec.style.display = 'block';
+        }
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function () {
+            toggleFields(this.value);
+        });
+        // Initial call
+        toggleFields(roleSelect.value);
+    } else {
+        // If edit mode, roleSelect is replaced by hardcoded string, use variable passed from view
+        const activeRole = "{{ user_role }}";
+        toggleFields(activeRole);
+    }
+})();
+</script>
+{% endblock %}

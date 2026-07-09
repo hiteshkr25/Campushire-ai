@@ -1,0 +1,137 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Change Requests - CampusHire AI{% endblock %}
+{% block portal_heading %}Student Profile Change Requests{% endblock %}
+{% block portal_subheading %}Review and approve corrections for locked student identity and institutional fields.{% endblock %}
+{% block breadcrumb_current %}Change Requests{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4 text-start">
+    <div class="col-12">
+        <!-- Filtering & Search Bar Card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('tpo.list_change_requests') }}" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="search-input" class="form-label small fw-bold">Search Student</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" name="q" id="search-input" class="form-control border-start-0" placeholder="Name or enrollment number..." value="{{ search_query }}">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="status-filter" class="form-label small fw-bold">Filter Status</label>
+                        <select name="status" id="status-filter" class="form-select form-select-sm">
+                            <option value="pending" {{ 'selected' if status_filter == 'pending' else '' }}>Pending Review</option>
+                            <option value="approved" {{ 'selected' if status_filter == 'approved' else '' }}>Approved</option>
+                            <option value="rejected" {{ 'selected' if status_filter == 'rejected' else '' }}>Rejected</option>
+                            <option value="" {{ 'selected' if status_filter == '' else '' }}>All Requests</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="sort-order" class="form-label small fw-bold">Sort By Date</label>
+                        <select name="sort" id="sort-order" class="form-select form-select-sm">
+                            <option value="newest" {{ 'selected' if sort_order == 'newest' else '' }}>Newest First</option>
+                            <option value="oldest" {{ 'selected' if sort_order == 'oldest' else '' }}>Oldest First</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm flex-fill">Apply</button>
+                        <a href="{{ url_for('tpo.list_change_requests') }}" class="btn btn-outline-secondary btn-sm flex-fill">Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Requests List Card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header mb-4">
+                    <h2>Requests ({{ requests|length }})</h2>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle text-start">
+                        <thead>
+                            <tr>
+                                <th>Student details</th>
+                                <th>Field</th>
+                                <th>Current Value</th>
+                                <th>Requested Value</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th style="min-width: 250px;">Actions / Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in requests %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ req.student.full_name }}</div>
+                                    <div class="text-muted small">Enrollment: {{ req.student.enrollment_number }}</div>
+                                    <div class="text-muted small">Branch: {{ req.student.branch.code }}</div>
+                                </td>
+                                <td><span class="badge bg-secondary">{{ labels.get(req.field_name, req.field_name) }}</span></td>
+                                <td>
+                                    <div class="text-danger text-decoration-line-through small">
+                                        {{ format_val(req.field_name, req.old_value) }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="text-success fw-bold small">
+                                        {{ format_val(req.field_name, req.requested_value) }}
+                                    </div>
+                                </td>
+                                <td style="max-width: 300px; word-break: break-word;" class="small text-muted">{{ req.reason }}</td>
+                                <td>
+                                    {% if req.status == 'approved' %}
+                                    <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i>Approved</span>
+                                    {% elif req.status == 'rejected' %}
+                                    <span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Rejected</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i>Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if req.status == 'pending' %}
+                                    <div class="d-flex flex-column gap-2">
+                                        <form method="POST" action="{{ url_for('tpo.approve_change_request', request_id=req.id) }}" onsubmit="return confirm('Approve profile correction for {{ req.student.full_name }}?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-success btn-xs w-100"><i class="fa-solid fa-check me-1"></i>Approve Change</button>
+                                        </form>
+
+                                        <form method="POST" action="{{ url_for('tpo.reject_change_request', request_id=req.id) }}" class="d-flex gap-1">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="text" name="rejection_reason" required class="form-control form-control-xs" placeholder="Rejection reason..." style="font-size: 11px;">
+                                            <button type="submit" class="btn btn-outline-danger btn-xs"><i class="fa-solid fa-xmark"></i></button>
+                                        </form>
+                                    </div>
+                                    {% else %}
+                                    <div class="small text-muted">
+                                        Reviewed by: <strong>{{ req.reviewer.email if req.reviewer else 'TPO' }}</strong><br>
+                                        Date: <strong>{{ req.reviewed_at.strftime('%d %b %Y, %I:%M %p') if req.reviewed_at else '' }}</strong>
+                                        {% if req.status == 'rejected' and req.rejection_reason %}
+                                        <div class="mt-1 p-1 bg-light rounded border text-danger" style="font-size: 11px;">
+                                            <strong>Remarks:</strong> {{ req.rejection_reason }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">No change requests found matching current filter options.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

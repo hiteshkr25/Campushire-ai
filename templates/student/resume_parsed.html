@@ -1,0 +1,206 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Parsed Resume Metadata - CampusHire AI{% endblock %}
+{% block portal_heading %}Parsed Resume Metadata{% endblock %}
+{% block portal_subheading %}Review parameters extracted from PDF resume: {{ resume.file_name }}.{% endblock %}
+{% block breadcrumb_current %}Resumes / Parsed View{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.resumes') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Repository</a>
+<form method="POST" action="{{ url_for('student.reparse_resume', resume_id=resume.id) }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-rotate me-1"></i>Re-Parse Resume</button>
+</form>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4 text-start small">
+    <!-- Left column: Resume Summary & Confidence metrics -->
+    <div class="col-lg-4">
+        <!-- Summary card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-file-lines me-2"></i>AI Extracted Summary</h3>
+                <p class="text-primary-emphasis italic mb-0" style="line-height: 1.4; font-size: 0.85rem;">
+                    "{{ parsed_data.summary if parsed_data.summary else 'No summary generated.' }}"
+                </p>
+            </div>
+        </div>
+
+        <!-- Confidence score panel -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-bullseye me-2"></i>Parser Confidence Score</h3>
+                <div class="d-flex align-items-center gap-3">
+                    {% set score = parsed_data.confidence_score|default(0) %}
+                    {% set color_class = 'danger' %}
+                    {% if score >= 75 %}{% set color_class = 'success' %}
+                    {% elif score >= 50 %}{% set color_class = 'warning' %}
+                    {% endif %}
+                    <strong class="fs-2 text-{{ color_class }}">{{ score }}%</strong>
+                    <div class="progress flex-grow-1" style="height: 10px;">
+                        <div class="progress-bar bg-{{ color_class }}" role="progressbar" style="width: {{ score }}%" aria-valuenow="{{ score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2">Confidence represents how many key resume components (Contact details, Education, Experience, Skills list) were successfully identified.</small>
+            </div>
+        </div>
+
+        <!-- Missing information detection (Feature #13) -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-warning"><i class="fa-solid fa-triangle-exclamation me-2"></i>Missing Information Alerts</h3>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for item in parsed_data.missing_fields %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1 text-danger d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-minus small"></i>
+                        <span>Missing <strong>{{ item }}</strong> details.</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1 text-success d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>Awesome! All key parameters extracted.</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <small class="text-muted d-block mt-2">Update your resume document to include missing parameters for better ATS matching scores.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right column: Extracted parameters detail list -->
+    <div class="col-lg-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-address-card me-2"></i>Extracted Credentials</h3>
+                
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Full Name</span>
+                        <strong>{{ parsed_data.name if parsed_data.name else 'Not detected' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Email Address</span>
+                        <strong>{{ parsed_data.email if parsed_data.email else 'Not detected' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Phone Number</span>
+                        <strong>{{ parsed_data.phone if parsed_data.phone else 'Not detected' }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">LinkedIn URL</span>
+                        {% if parsed_data.linkedin %}
+                        <a href="{{ parsed_data.linkedin }}" target="_blank" class="text-primary-emphasis text-decoration-none fw-bold"><i class="fa-brands fa-linkedin me-1 text-primary"></i>LinkedIn Profile</a>
+                        {% else %}
+                        <strong class="text-muted">Not detected</strong>
+                        {% endif %}
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">GitHub URL</span>
+                        {% if parsed_data.github %}
+                        <a href="{{ parsed_data.github }}" target="_blank" class="text-primary-emphasis text-decoration-none fw-bold"><i class="fa-brands fa-github me-1"></i>GitHub Repository</a>
+                        {% else %}
+                        <strong class="text-muted">Not detected</strong>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-brain me-2"></i>Extracted Technical Skills</h3>
+                <div class="d-flex flex-wrap gap-1">
+                    {% for skill in parsed_data.skills %}
+                    <span class="badge text-bg-light border text-primary-emphasis">{{ skill }}</span>
+                    {% else %}
+                    <span class="text-muted">No matching skills detected.</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic / Experience segments -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-graduation-cap me-2"></i>Academic Education Records</h3>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for edu in parsed_data.education %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1.5 text-primary-emphasis fw-bold d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-check text-success mt-1"></i>
+                        <span>{{ edu.raw if edu is mapping else edu }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1 text-muted">No education details identified.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-briefcase me-2"></i>Professional Work Experience</h3>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for exp in parsed_data.experience %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-2 text-primary-emphasis">
+                        {% if exp is mapping %}
+                        <div class="fw-bold">{{ exp.role or exp.company or '—' }}{% if exp.company and exp.role %} <span class="fw-normal text-muted">at {{ exp.company }}</span>{% endif %}</div>
+                        {% if exp.duration %}<div class="small text-muted mb-1"><i class="fa-regular fa-calendar me-1"></i>{{ exp.duration }}</div>{% endif %}
+                        {% for desc in (exp.description or [])[:3] %}
+                        <div class="d-flex align-items-start gap-2 mt-1"><i class="fa-solid fa-angle-right text-muted mt-1 flex-shrink-0"></i><span class="small">{{ desc }}</span></div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="d-flex align-items-start gap-2"><i class="fa-solid fa-angle-right text-muted mt-1"></i><span>{{ exp }}</span></div>
+                        {% endif %}
+                    </li>
+                    {% else %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1 text-muted">No employment records identified.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-folder-open me-2"></i>Personal Academic Projects</h3>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for proj in parsed_data.projects %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-2 text-primary-emphasis">
+                        {% if proj is mapping %}
+                        <div class="fw-bold">{{ proj.title or '—' }}</div>
+                        {% if proj.duration %}<div class="small text-muted mb-1"><i class="fa-regular fa-calendar me-1"></i>{{ proj.duration }}</div>{% endif %}
+                        {% if proj.technologies %}
+                        <div class="mb-1">{% for tech in proj.technologies[:6] %}<span class="badge bg-primary-subtle text-primary-emphasis me-1 fw-normal">{{ tech }}</span>{% endfor %}</div>
+                        {% endif %}
+                        {% if proj.github %}<div class="small mb-1"><i class="fa-brands fa-github me-1"></i><a href="{{ proj.github }}" target="_blank" class="text-muted text-decoration-none">{{ proj.github }}</a></div>{% endif %}
+                        {% if proj.description %}<div class="small text-muted">{{ proj.description[:200] }}{% if proj.description|length > 200 %}…{% endif %}</div>{% endif %}
+                        {% else %}
+                        <div class="d-flex align-items-start gap-2"><i class="fa-solid fa-angle-right text-muted mt-1"></i><span>{{ proj }}</span></div>
+                        {% endif %}
+                    </li>
+                    {% else %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1 text-muted">No projects details identified.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-award me-2"></i>Certifications Details</h3>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for cert in parsed_data.certifications %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1.5 text-primary-emphasis d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-certificate text-warning mt-1"></i>
+                        <span>{{ cert }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1 text-muted">No certifications identified.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

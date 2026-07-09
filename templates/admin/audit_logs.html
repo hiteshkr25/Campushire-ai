@@ -1,0 +1,309 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}System Audit Logs - CampusHire AI{% endblock %}
+{% block portal_heading %}System Audit Logs{% endblock %}
+{% block portal_subheading %}Track user logins, failed password attempts, data modifications, drive actions, and offer statuses mutations.{% endblock %}
+{% block breadcrumb_current %}Audit Log{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('admin.export_audit_logs', q=filters.q, action=filters.action, entity_type=filters.entity_type) }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-file-csv me-1"></i>Export Logs (CSV)</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Overview Stats Grid -->
+<div class="row g-3 mb-4 text-start">
+    <div class="col-md-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-3">
+            <span class="metric-icon bg-primary-subtle text-primary mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-list-check"></i></span>
+            <small class="text-muted">Total Events Logged</small>
+            <strong class="fs-4">{{ stats.total_logs }}</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-3">
+            <span class="metric-icon bg-success-subtle text-success mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-user-check"></i></span>
+            <small class="text-muted">Successful Logins</small>
+            <strong class="fs-4 text-success">{{ stats.success_logins }}</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-3">
+            <span class="metric-icon bg-danger-subtle text-danger mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-triangle-exclamation"></i></span>
+            <small class="text-muted">Failed Authentication Attempts</small>
+            <strong class="fs-4 text-danger">{{ stats.failed_logins }}</strong>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-3">
+            <span class="metric-icon bg-warning-subtle text-warning mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-database"></i></span>
+            <small class="text-muted">Data Mutations (C/U/D)</small>
+            <strong class="fs-4 text-warning">{{ stats.mutations }}</strong>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="row g-4 mb-4">
+    <!-- Daily Trend Chart (Line) -->
+    <div class="col-lg-6">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-start"><i class="fa-solid fa-chart-line me-2 text-primary"></i>Daily Activity Trends (Last 7 Days)</h3>
+                <div style="height: 180px;">
+                    <canvas id="dailyActivityTrendsChart" aria-label="Daily trends timeline" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Distribution (Doughnut) -->
+    <div class="col-lg-3">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-start"><i class="fa-solid fa-chart-pie me-2 text-success"></i>Event Distribution</h3>
+                <div style="height: 180px;">
+                    <canvas id="eventDistributionChart" aria-label="Event distribution doughnut" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logins Ratios (Pie) -->
+    <div class="col-lg-3">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-start"><i class="fa-solid fa-shield-halved me-2 text-warning"></i>Login Attempts Ratio</h3>
+                <div style="height: 180px;">
+                    <canvas id="loginRatioChart" aria-label="Login success ratio pie" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filtering -->
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-start">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('admin.audit_logs') }}" class="row g-2 small">
+            <div class="col-sm-5">
+                <label class="form-label text-muted fw-bold">Keyword / ID</label>
+                <input type="text" name="q" value="{{ filters.q }}" class="form-control form-control-sm bg-transparent text-primary-emphasis" placeholder="Search by email, entity type or ID...">
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label text-muted fw-bold">Action Type</label>
+                <select name="action" class="form-select form-select-sm bg-transparent text-primary-emphasis">
+                    <option value="">All Actions</option>
+                    {% for item in AuditAction %}
+                    <option value="{{ item.value }}" {% if filters.action == item.value %}selected{% endif %}>{{ item.value|replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label text-muted fw-bold">Entity Type</label>
+                <input type="text" name="entity_type" value="{{ filters.entity_type }}" class="form-control form-control-sm bg-transparent text-primary-emphasis" placeholder="e.g. user, offer">
+            </div>
+            <div class="col-sm-2 d-flex align-items-end gap-1">
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Filter</button>
+                <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-undo"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Logs Timeline Table -->
+<div class="card dashboard-panel glass-dashboard-card border-0 text-start">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0 small">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Actor</th>
+                        <th>Action Type</th>
+                        <th>Entity Category</th>
+                        <th>Entity ID</th>
+                        <th>Metadata Changes</th>
+                        <th>Logistics</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <!-- Timestamp -->
+                        <td>
+                            <strong class="text-primary-emphasis d-block">{{ log.created_at.strftime('%d %b %Y') if log.created_at else 'System' }}</strong>
+                            <small class="text-muted">{{ log.created_at.strftime('%I:%M:%S %p') if log.created_at else '' }}</small>
+                        </td>
+
+                        <!-- Actor -->
+                        <td>
+                            {% if log.user %}
+                            <strong class="d-block">{{ log.user.email }}</strong>
+                            <span class="badge text-bg-light border text-muted fs-8">{{ log.user.role.value|title }}</span>
+                            {% else %}
+                            <span class="text-muted">System Process</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Action badge -->
+                        <td>
+                            {% set action_val = log.action.value %}
+                            {% set badge_type = 'secondary' %}
+                            {% if action_val == 'login' %}{% set badge_type = 'success' %}
+                            {% elif action_val == 'login_failed' %}{% set badge_type = 'danger' %}
+                            {% elif action_val == 'create' %}{% set badge_type = 'primary' %}
+                            {% elif action_val == 'update' %}{% set badge_type = 'warning' %}
+                            {% elif action_val == 'delete' %}{% set badge_type = 'danger' %}
+                            {% elif action_val == 'status_change' %}{% set badge_type = 'info' %}
+                            {% endif %}
+                            <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }}">
+                                {{ action_val|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+
+                        <!-- Entity type -->
+                        <td>
+                            <strong class="text-capitalize">{{ log.entity_type }}</strong>
+                        </td>
+
+                        <!-- Entity ID -->
+                        <td>
+                            <code class="fs-8" title="{{ log.entity_id }}">{{ log.entity_id or 'N/A' }}</code>
+                        </td>
+
+                        <!-- Changes value -->
+                        <td>
+                            {% if log.new_values %}
+                            <div class="change-log-values p-1 border rounded bg-body" style="font-size: 0.72rem; max-width: 250px; max-height: 50px; overflow-y: auto;">
+                                {% for k, v in log.new_values.items() %}
+                                <span class="d-block text-primary-emphasis"><strong>{{ k }}:</strong> {{ v }}</span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted italic">No metadata updates</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Logistics -->
+                        <td>
+                            <small class="text-muted d-block">IP: {{ log.ip_address or '127.0.0.1' }}</small>
+                            <small class="text-muted text-truncate d-block" style="max-width: 140px;" title="{{ log.user_agent }}">{{ log.user_agent or 'System Agent' }}</small>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No audit logs matching search filters.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const css = getComputedStyle(document.documentElement);
+    const textColor = css.getPropertyValue('--dash-text').trim() || '#162033';
+    const mutedColor = css.getPropertyValue('--dash-muted').trim() || '#64708a';
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = 'rgba(100, 112, 138, 0.12)';
+
+    const stats = {{ stats|tojson }};
+
+    // 1. Daily trends chart (Line)
+    const ctxTrends = document.getElementById('dailyActivityTrendsChart');
+    if (ctxTrends) {
+        new Chart(ctxTrends, {
+            type: 'line',
+            data: {
+                labels: stats.trends.map(t => t.day),
+                datasets: [
+                    {
+                        label: 'Successful Logins',
+                        data: stats.trends.map(t => t.logins),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Data Mutations',
+                        data: stats.trends.map(t => t.mutations),
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6 } } },
+                scales: {
+                    x: { ticks: { color: mutedColor } },
+                    y: { beginAtZero: true, ticks: { color: mutedColor, stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    // 2. Event distribution doughnut
+    const ctxDistribution = document.getElementById('eventDistributionChart');
+    if (ctxDistribution) {
+        const labels = ['Logins', 'Failures', 'Creates', 'Updates', 'Deletes', 'Status Toggles'];
+        const values = [
+            stats.distribution.login,
+            stats.distribution.failed_auth,
+            stats.distribution.create,
+            stats.distribution.update,
+            stats.distribution.delete,
+            stats.distribution.status_change
+        ];
+        new Chart(ctxDistribution, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#dc2626', '#06b6d4'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 3. Logins ratios pie
+    const ctxLogins = document.getElementById('loginRatioChart');
+    if (ctxLogins) {
+        new Chart(ctxLogins, {
+            type: 'pie',
+            data: {
+                labels: ['Success', 'Failed'],
+                datasets: [{
+                    data: [stats.success_logins, stats.failed_logins],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

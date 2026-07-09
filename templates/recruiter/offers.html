@@ -1,0 +1,293 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Offer Management - CampusHire AI{% endblock %}
+{% block portal_heading %}Offer Management{% endblock %}
+{% block portal_subheading %}Release job offer letters to selected candidates, track acceptances, record offline responses, and analyze packages.{% endblock %}
+{% block breadcrumb_current %}Offers{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('recruiter.create_offer') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-paper-plane me-1"></i>Release New Offer</a>
+<a href="{{ url_for('recruiter.export_offers') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-file-csv me-1"></i>Export Offers (CSV)</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Offer Stats Cards Grid -->
+<div class="row g-3 mb-4">
+    <!-- Offers Released -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-primary-subtle text-primary"><i class="fa-solid fa-paper-plane"></i></span>
+                    <span class="badge text-bg-primary-subtle text-primary">Released</span>
+                </div>
+                <small>Offers Released</small>
+                <strong>{{ stats.extended }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offers Accepted -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-success-subtle text-success"><i class="fa-solid fa-circle-check"></i></span>
+                    <span class="badge text-bg-success-subtle text-success">{{ stats.acceptance_rate }}% Rate</span>
+                </div>
+                <small>Offers Accepted</small>
+                <strong>{{ stats.accepted }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average CTC -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-info-subtle text-info"><i class="fa-solid fa-sack-dollar"></i></span>
+                    <span class="badge text-bg-info-subtle text-info">Average</span>
+                </div>
+                <small>Average CTC Package</small>
+                <strong>{{ stats.average|round(2) }} <span class="fs-6 text-muted">LPA</span></strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Highest CTC -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body p-3">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-warning-subtle text-warning"><i class="fa-solid fa-award"></i></span>
+                    <span class="badge text-bg-warning-subtle text-warning">Highest</span>
+                </div>
+                <small>Highest CTC Package</small>
+                <strong>{{ stats.highest|round(2) }} <span class="fs-6 text-muted">LPA</span></strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Left column: Selection list ready for offers -->
+    <div class="col-lg-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-user-clock me-2 text-primary"></i>Selection List (Ready for Offers)</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle mb-0 small">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Branch</th>
+                                <th>Placement Drive</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in selections %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center">{{ app.student.first_name[:1]|upper }}</span>
+                                        <div>
+                                            <strong class="d-block">{{ app.student.full_name }}</strong>
+                                            <small class="text-muted d-block">{{ app.student.user.email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><strong>{{ app.student.branch.code if app.student.branch else 'N/A' }}</strong></td>
+                                <td>{{ app.drive.title }}</td>
+                                <td><span class="badge text-bg-warning-subtle text-warning">Selected</span></td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('recruiter.create_offer', application_id=app.id) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-paper-plane me-1"></i>Release Offer</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No selected candidates waiting for offers.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right column: Offer acceptance doughnut chart -->
+    <div class="col-lg-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-chart-pie me-2 text-success"></i>Acceptance Status Ratio</h3>
+                <div style="height: 160px;">
+                    <canvas id="offersStatusChart" aria-label="Offers acceptance rates chart" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Offers History & Tracking -->
+<div class="card dashboard-panel glass-dashboard-card border-0">
+    <div class="card-body">
+        <h3 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Offers Released History</h3>
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0 small">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Drive</th>
+                        <th>CTC CTC</th>
+                        <th>Location</th>
+                        <th>Expires At</th>
+                        <th>Offer Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in offers %}
+                    {% set app = o.application %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center">{{ app.student.first_name[:1]|upper }}</span>
+                                <div>
+                                    <strong class="d-block">{{ app.student.full_name }}</strong>
+                                    <small class="text-muted d-block">{{ app.student.user.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ app.drive.title }}</td>
+                        <td><strong class="text-success">{{ o.package_offered_lpa }} LPA</strong></td>
+                        <td>{{ o.job_location }}</td>
+                        <td>{{ o.expires_at.strftime('%d %b %Y') if o.expires_at else 'N/A' }}</td>
+                        <td>
+                            {% set status_val = o.status.value %}
+                            {% set badge_type = 'secondary' %}
+                            {% if status_val == 'accepted' %}{% set badge_type = 'success' %}
+                            {% elif status_val == 'extended' %}{% set badge_type = 'warning' %}
+                            {% elif status_val in ('declined', 'revoked', 'expired') %}{% set badge_type = 'danger' %}
+                            {% endif %}
+                            <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }}">
+                                {{ status_val|title }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                {% if o.offer_letter_path %}
+                                <a href="{{ url_for('recruiter.download_offer_letter', offer_id=o.id) }}" class="btn btn-outline-primary btn-sm" title="Download Letter"><i class="fa-solid fa-file-arrow-down"></i></a>
+                                {% endif %}
+                                
+                                {% if status_val == 'extended' %}
+                                <button type="button" class="btn btn-success btn-sm record-response-btn" data-offer-id="{{ o.id }}" data-candidate-name="{{ app.student.full_name }}" data-bs-toggle="modal" data-bs-target="#recordResponseModal"><i class="fa-solid fa-file-signature me-1"></i>Response</button>
+                                <form method="POST" action="{{ url_for('recruiter.revoke_offer', offer_id=o.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to revoke this offer?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Revoke Offer"><i class="fa-solid fa-ban"></i></button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No placement offers released yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Record Candidate Response -->
+<div class="modal fade" id="recordResponseModal" tabindex="-1" aria-labelledby="recordResponseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-dashboard-card border-0 text-start" style="backdrop-filter: blur(25px);">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title" id="recordResponseModalLabel"><i class="fa-solid fa-file-signature me-2 text-success"></i>Record Candidate Response</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="recordResponseForm" method="POST" action="" class="small">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <span class="text-muted d-block small">Candidate Name:</span>
+                        <strong id="modalCandidateName" class="text-primary-emphasis"></strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Select Outcome Status</label>
+                        {{ response_form.status(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Feedback Remarks / Internal Note</label>
+                        {{ response_form.response_note(class="form-control form-control-sm bg-transparent text-primary-emphasis", rows="4", placeholder="Remarks about acceptance details or declination reason...") }}
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-save me-1"></i>Save Response</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const statsData = {{ stats|tojson }};
+    const ctx = document.getElementById('offersStatusChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Accepted', 'Pending', 'Declined'],
+                datasets: [{
+                    data: [statsData.accepted, statsData.pending, statsData.rejected],
+                    backgroundColor: ['#10b981', '#3b82f6', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 6,
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--dash-text').trim() || '#162033'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Modal action population
+    const modal = document.getElementById('recordResponseModal');
+    const responseForm = document.getElementById('recordResponseForm');
+    const candidateNameHolder = document.getElementById('modalCandidateName');
+
+    document.querySelectorAll('.record-response-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const offerId = this.getAttribute('data-offer-id');
+            const candidateName = this.getAttribute('data-candidate-name');
+            
+            candidateNameHolder.textContent = candidateName;
+            responseForm.setAttribute('action', `/recruiter/offers/${offerId}/response`);
+        });
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Resume Dashboard & Repository - CampusHire AI{% endblock %}
+{% block portal_heading %}Resume Dashboard & Repository{% endblock %}
+{% block portal_subheading %}Upload resumes, manage parsing histories, trace missing parameters, and preview structured ATS parameters.{% endblock %}
+{% block breadcrumb_current %}Resumes{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-user-graduate me-1"></i>Profile</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Resume Statistics Dashboard -->
+{% set ns = namespace(parsed_count=0) %}
+{% for resume in resumes %}
+    {% if resume.parse_status.value == 'completed' and resume.parsed_text %}
+        {% set ns.parsed_count = ns.parsed_count + 1 %}
+    {% endif %}
+{% endfor %}
+
+<div class="row g-3 mb-4 text-start">
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 p-3 h-100">
+            <span class="metric-icon bg-primary-subtle text-primary mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-file-invoice"></i></span>
+            <small class="text-muted">Total Resume Versions</small>
+            <strong class="fs-4">{{ resumes|length }}</strong>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 p-3 h-100">
+            <span class="metric-icon bg-success-subtle text-success mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-square-poll-vertical"></i></span>
+            <small class="text-muted">Successfully Parsed</small>
+            <strong class="fs-4 text-success">{{ ns.parsed_count }} <span class="fs-6 text-muted">/ {{ resumes|length }}</span></strong>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 p-3 h-100">
+            <span class="metric-icon bg-warning-subtle text-warning mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-bolt"></i></span>
+            <small class="text-muted">ATS Ready Status</small>
+            <strong class="fs-4 text-warning">{% if resumes|length > 0 %}Active{% else %}Inactive{% endif %}</strong>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 text-start">
+    <!-- Left panel: Upload Form -->
+    <div class="col-xl-4">
+        <form method="POST" enctype="multipart/form-data" novalidate class="card dashboard-panel glass-dashboard-card border-0 resume-upload-card h-100">
+            <div class="card-body">
+                {{ form.hidden_tag() }}
+                <div class="panel-header">
+                    <div>
+                        <h2>Upload new version</h2>
+                        <p>PDF resumes are automatically parsed for profile extraction.</p>
+                    </div>
+                </div>
+                <label class="resume-dropzone" for="{{ form.resume.id }}">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <strong>Choose resume PDF</strong>
+                    <span>Must be PDF format</span>
+                </label>
+                {{ form.resume(class="form-control mt-3" + (" is-invalid" if form.resume.errors else ""), accept=".pdf,application/pdf") }}
+                {% for error in form.resume.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                
+                <div class="form-check mt-3">
+                    {{ form.is_primary(class="form-check-input") }}
+                    {{ form.is_primary.label(class="form-check-label text-muted") }}
+                </div>
+                {{ form.submit(class="btn btn-primary w-100 mt-4", value="Upload & Parse Resume") }}
+            </div>
+        </form>
+    </div>
+
+    <!-- Right panel: Roster Listing -->
+    <div class="col-xl-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Resume Versions & Parsing History</h2>
+                        <p>Review extraction details, parse status, and confidence levels.</p>
+                    </div>
+                </div>
+
+                <div class="resume-version-list d-flex flex-column gap-3">
+                    {% for resume in resumes %}
+                    <article class="resume-version-card p-3 border rounded bg-light-subtle d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="resume-file-icon rounded p-2 bg-primary-subtle text-primary fs-4" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <div>
+                                <div class="resume-version-title d-flex align-items-center gap-2">
+                                    <strong class="text-primary-emphasis">{{ resume.file_name }}</strong>
+                                    {% if resume.is_primary %}<span class="badge text-bg-success">Active</span>{% endif %}
+                                </div>
+                                <div class="resume-meta text-muted small d-flex flex-wrap gap-2 mt-1">
+                                    <span>Size: {{ (resume.file_size_bytes / 1024)|round(1) }} KB</span>
+                                    <span>Uploaded: {{ resume.uploaded_at.strftime('%d %b %Y') if resume.uploaded_at else 'recently' }}</span>
+                                </div>
+                                
+                                <!-- Parser indicators -->
+                                <div class="parser-status-row mt-2">
+                                    {% set status_val = resume.parse_status.value %}
+                                    {% if status_val == 'completed' %}
+                                        <span class="badge text-bg-success-subtle text-success border"><i class="fa-solid fa-circle-check me-1"></i>Parsed</span>
+                                        <!-- Quick confidence indicator if text present -->
+                                        {% if resume.parsed_text %}
+                                            <span class="badge text-bg-info-subtle text-info border ms-1"><i class="fa-solid fa-bullseye me-1"></i>Confidence Status</span>
+                                        {% endif %}
+                                    {% elif status_val == 'pending' %}
+                                        <span class="badge text-bg-warning-subtle text-warning border"><i class="fa-solid fa-clock-rotate-left me-1"></i>Parsing pending...</span>
+                                    {% else %}
+                                        <span class="badge text-bg-danger-subtle text-danger border"><i class="fa-solid fa-circle-xmark me-1"></i>Parsing Failed</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions Grid -->
+                        <div class="resume-actions d-flex flex-wrap gap-1 align-items-center justify-content-start justify-content-md-end">
+                            {% if status_val == 'completed' %}
+                            <a href="{{ url_for('student.view_parsed_resume', resume_id=resume.id) }}" class="btn btn-sm btn-outline-info" title="Preview Extracted Metadata"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>Parsed Data</a>
+                            {% endif %}
+
+                            <a href="{{ url_for('student.preview_resume', resume_id=resume.id) }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Preview Document"><i class="fa-solid fa-eye"></i></a>
+                            
+                            <a href="{{ url_for('student.download_resume', resume_id=resume.id) }}" class="btn btn-sm btn-outline-secondary" title="Download Resume"><i class="fa-solid fa-download"></i></a>
+                            
+                            <!-- Reparse trigger (Feature #16) -->
+                            <form method="POST" action="{{ url_for('student.reparse_resume', resume_id=resume.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Re-parse Resume"><i class="fa-solid fa-rotate"></i></button>
+                            </form>
+
+                            {% if not resume.is_primary %}
+                            <form method="POST" action="{{ url_for('student.activate_resume', resume_id=resume.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Set Active Resume"><i class="fa-solid fa-star"></i></button>
+                            </form>
+                            {% endif %}
+                            
+                            <form method="POST" action="{{ url_for('student.delete_resume', resume_id=resume.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this resume version?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </div>
+                    </article>
+                    {% else %}
+                    <div class="resume-empty-state text-center py-5 border border-dashed rounded text-muted">
+                        <i class="fa-regular fa-file-lines fa-3x mb-3 text-muted opacity-50"></i>
+                        <h4 class="h5">No resumes uploaded yet</h4>
+                        <p class="mb-0 small">Upload your first PDF resume version to trigger auto-parsing extraction.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

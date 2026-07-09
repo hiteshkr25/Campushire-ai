@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block body_class %}auth-page{% endblock %}
+{% block main_class %}auth-shell min-vh-100{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div class="auth-backdrop" aria-hidden="true">
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+    <div class="auth-orb auth-orb-3"></div>
+    <div class="auth-orb auth-orb-4"></div>
+    <div class="auth-orb auth-orb-5"></div>
+</div>
+
+<div class="container auth-content-layer">
+    <div class="row align-items-center justify-content-center g-4 g-xl-5 min-vh-100 py-4 py-lg-5">
+        <div class="col-lg-6 col-xl-5 d-none d-lg-block">
+            <section class="auth-showcase glass-panel animated-card">
+                <a href="{{ url_for('main.index') }}" class="auth-brand text-decoration-none">
+                    <span class="auth-brand-icon"><i class="fa-solid fa-graduation-cap"></i></span>
+                    <span>CampusHire AI</span>
+                </a>
+                <div class="auth-showcase-content">
+                    <p class="auth-eyebrow">Placement command center</p>
+                    <h1>Hire-ready talent workflows in one modern dashboard.</h1>
+                    <p>
+                        Connect students, recruiters, TPO teams, and admins with intelligent approvals,
+                        placement drives, applications, and secure access.
+                    </p>
+                </div>
+                <div class="auth-metrics" aria-label="Platform highlights">
+                    <div>
+                        <strong>4</strong>
+                        <span>Portals</span>
+                    </div>
+                    <div>
+                        <strong>24/7</strong>
+                        <span>Access</span>
+                    </div>
+                    <div>
+                        <strong>AI</strong>
+                        <span>Assisted</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-md-10 col-lg-6 col-xl-5">
+            <section class="auth-card glass-panel animated-card mx-auto">
+                <div class="auth-card-header text-center text-lg-start">
+                    <a href="{{ url_for('main.index') }}" class="auth-brand auth-brand-compact text-decoration-none">
+                        <span class="auth-brand-icon"><i class="fa-solid fa-graduation-cap"></i></span>
+                        <span>CampusHire AI</span>
+                    </a>
+                    {% block auth_subtitle %}{% endblock %}
+                </div>
+
+                {% block auth_content %}{% endblock %}
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "portals/base_portal.html" %}
+{% from "components/ats_ring.html" import ats_ring %}
+
+{% block title %}ATS Match Details - CampusHire AI{% endblock %}
+{% block portal_heading %}ATS Score Analysis{% endblock %}
+{% block portal_subheading %}Granular ATS matching breakdown details for campaign: {{ drive.title }}.{% endblock %}
+{% block breadcrumb_current %}ATS Rank Match / Details{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.ats_dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Dashboard</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4 text-start small">
+    <!-- Left Panel: Overall Match & Breakdown -->
+    <div class="col-lg-5">
+        <!-- Match Score card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-center">
+            <div class="card-body py-4">
+                {% set score = ats_data.score %}
+                {% set color_class = 'danger' %}
+                {% if score >= 75 %}{% set color_class = 'success' %}
+                {% elif score >= 50 %}{% set color_class = 'warning' %}
+                {% endif %}
+
+                <h3 class="h6 mb-3 text-muted">Overall Match Index</h3>
+                <div class="d-flex justify-content-center mb-3">
+                    {{ ats_ring(score=score, size="lg") }}
+                </div>
+
+                <span class="badge text-bg-{{ color_class }}-subtle text-{{ color_class }} border fs-8">
+                    {{ ats_data.match_confidence }} Match Confidence
+                </span>
+
+                <div class="mt-3 text-start small border-top pt-2">
+                    <span class="text-muted d-block fw-bold mb-1"><i class="fa-solid fa-wand-magic-sparkles me-1 text-primary"></i>ATS Match Recommendation</span>
+                    <p class="mb-0 text-primary-emphasis fw-bold">{{ ats_data.candidate_recommendation }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matching Breakdown details -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-chart-pie me-2"></i>Scoring Weights Breakdown</h3>
+                
+                <div class="d-flex flex-column gap-3">
+                    <!-- Skills (40%) -->
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Skills Coverage (40%)</span>
+                            <strong class="text-primary-emphasis">{{ ats_data.breakdown.skills }} / 40.0</strong>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (ats_data.breakdown.skills / 40.0 * 100) }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Projects (20%) -->
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Project Portfolio (20%)</span>
+                            <strong class="text-primary-emphasis">{{ ats_data.breakdown.projects }} / 20.0</strong>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ (ats_data.breakdown.projects / 20.0 * 100) }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Academic CGPA (20%) -->
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Academic standing / CGPA (20%)</span>
+                            <strong class="text-primary-emphasis">{{ ats_data.breakdown.cgpa }} / 20.0</strong>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ (ats_data.breakdown.cgpa / 20.0 * 100) }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Certifications (10%) -->
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Certifications check (10%)</span>
+                            <strong class="text-primary-emphasis">{{ ats_data.breakdown.certifications }} / 10.0</strong>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ (ats_data.breakdown.certifications / 10.0 * 100) }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Professional Experience (10%) -->
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Work Experience (10%)</span>
+                            <strong class="text-primary-emphasis">{{ ats_data.breakdown.experience }} / 10.0</strong>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ (ats_data.breakdown.experience / 10.0 * 100) }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="border-top pt-2 mt-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Text Keyword Similarity index</span>
+                            <strong class="text-primary-emphasis">{{ ats_data.breakdown.similarity }}%</strong>
+                        </div>
+                        <small class="text-muted d-block mt-0.5">{{ ats_data.similarity_explanation }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Strengths, Weaknesses, Missing Skills & Suggestions -->
+    <div class="col-lg-7">
+        <!-- Strengths / Weaknesses -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6">
+                <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+                    <div class="card-body">
+                        <h3 class="h6 mb-3 border-bottom pb-2 text-success"><i class="fa-solid fa-circle-check me-2"></i>Strength Areas</h3>
+                        <ul class="list-group list-group-flush bg-transparent">
+                            {% for str in ats_data.strengths %}
+                            <li class="list-group-item bg-transparent border-0 px-0 py-1 text-success d-flex gap-2">
+                                <i class="fa-solid fa-plus mt-1 text-success"></i>
+                                <span>{{ str }}</span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item bg-transparent border-0 px-0 py-1 text-muted">No specific strengths identified.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6">
+                <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+                    <div class="card-body">
+                        <h3 class="h6 mb-3 border-bottom pb-2 text-danger"><i class="fa-solid fa-circle-minus me-2"></i>Weak Areas</h3>
+                        <ul class="list-group list-group-flush bg-transparent">
+                            {% for weak in ats_data.weaknesses %}
+                            <li class="list-group-item bg-transparent border-0 px-0 py-1 text-danger d-flex gap-2">
+                                <i class="fa-solid fa-minus mt-1 text-danger"></i>
+                                <span>{{ weak }}</span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item bg-transparent border-0 px-0 py-1 text-success">No major warnings found!</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Missing skills -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-warning"><i class="fa-solid fa-tags me-2"></i>Missing Core Skills Required</h3>
+                <div class="d-flex flex-wrap gap-1">
+                    {% for ms in ats_data.missing_skills %}
+                    <span class="badge text-bg-warning-subtle text-warning border">{{ ms }}</span>
+                    {% else %}
+                    <span class="badge text-bg-success-subtle text-success border"><i class="fa-solid fa-circle-check me-1"></i>All drive-required core skills found in resume.</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Improvement suggestions -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-lightbulb me-2"></i>Actionable Improvement Suggestions</h3>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for sug in ats_data.suggestions %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1.5 text-primary-emphasis d-flex gap-2">
+                        <i class="fa-solid fa-circle-arrow-right text-primary mt-1"></i>
+                        <span>{{ sug }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-1 text-success fw-bold">Your resume is optimized for this campaign! No adjustments needed.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

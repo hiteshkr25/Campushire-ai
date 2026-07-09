@@ -1,0 +1,90 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Verification History - CampusHire AI{% endblock %}
+{% block portal_heading %}Verification History{% endblock %}
+{% block portal_subheading %}Historical logs of verified profiles and rejected requests. Verified academic data remains locked from editing.{% endblock %}
+{% block breadcrumb_current %}Verifications / History{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('tpo.verification') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Verification Dashboard</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Verification History Log Archive -->
+<div class="card dashboard-panel glass-dashboard-card border-0">
+    <div class="card-body">
+        <div class="panel-header mb-3">
+            <h2>Verification Logs Archive</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Student</th>
+                        <th>Enrollment No.</th>
+                        <th>Branch</th>
+                        <th>Academic Record</th>
+                        <th>Verifier</th>
+                        <th>Verification Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if history %}
+                        {% for student in history %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center">{{ student.first_name[:1]|upper }}</span>
+                                    <strong>{{ student.full_name }}</strong>
+                                </div>
+                            </td>
+                            <td><span class="badge text-bg-light border fw-bold">{{ student.enrollment_number }}</span></td>
+                            <td>{{ student.branch.code }}</td>
+                            <td>
+                                <strong>{{ student.cgpa or 'N/A' }} CGPA</strong>
+                                <small class="text-muted d-block">{{ student.backlogs_count }} active backlog{{ '' if student.backlogs_count == 1 else 's' }}</small>
+                            </td>
+                            <td>
+                                {% if student.verifier %}
+                                    {% if student.verifier.tpo_profile %}
+                                        <strong>{{ student.verifier.tpo_profile.full_name }}</strong>
+                                    {% else %}
+                                        <strong>{{ student.verifier.email }}</strong>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">System / Admin</span>
+                                {% endif %}
+                            </td>
+                            <td><small class="text-muted">{{ student.verified_at.strftime('%d %b %Y, %I:%M %p') if student.verified_at else 'Not recorded' }}</small></td>
+                            <td>
+                                {% set ver_status = student.profile_status.value %}
+                                {% set badge_type = 'secondary' %}
+                                {% if ver_status == 'verified' %}{% set badge_type = 'success' %}
+                                {% elif ver_status == 'rejected' %}{% set badge_type = 'danger' %}
+                                {% endif %}
+                                <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }}">
+                                    {{ ver_status|title }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('tpo.review_student', student_id=student.id) }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-clock-rotate-left fa-2x mb-3 opacity-50"></i>
+                                <h3 class="h5">No verification logs recorded</h3>
+                                <p class="mb-0">Verify pending student profiles from the verification dashboard.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

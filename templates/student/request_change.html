@@ -1,0 +1,127 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Request Profile Change - CampusHire AI{% endblock %}
+{% block portal_heading %}Request Profile Change{% endblock %}
+{% block portal_subheading %}Submit a request to change verified identity or institutional details. Requires TPO approval.{% endblock %}
+{% block breadcrumb_current %}Request Change{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4 justify-content-center">
+    <div class="col-xl-8 text-start">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header mb-4">
+                    <div>
+                        <h2>Submit Profile Change Request</h2>
+                        <p class="text-muted small">Select the verified field you wish to update and provide the requested new value along with a justification.</p>
+                    </div>
+                    <a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Profile</a>
+                </div>
+
+                <form method="POST" novalidate id="changeRequestForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.field_name.label(class="form-label fw-bold") }}
+                        {{ form.field_name(class="form-select" + (" is-invalid" if form.field_name.errors else "")) }}
+                        {% for error in form.field_name.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                    </div>
+
+                    <div class="mb-3" id="valueInputContainer">
+                        {{ form.requested_value.label(class="form-label fw-bold", id="requestedValueLabel") }}
+                        {{ form.requested_value(class="form-control" + (" is-invalid" if form.requested_value.errors else ""), placeholder="Enter new value...") }}
+                        {% for error in form.requested_value.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.reason.label(class="form-label fw-bold") }}
+                        {{ form.reason(class="form-control" + (" is-invalid" if form.reason.errors else ""), rows="4", placeholder="Explain why this change is necessary (e.g., corrected typo, official name correction)...") }}
+                        {% for error in form.reason.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        {{ form.submit(class="btn btn-primary btn-sm flex-fill") }}
+                        <a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary btn-sm flex-fill">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var fieldSelect = document.getElementById("field_name");
+        var reqInput = document.getElementById("requested_value");
+        var inputContainer = document.getElementById("valueInputContainer");
+        
+        var branchChoices = {{ branch_choices | tojson }};
+        var genderChoices = [
+            {value: "female", label: "Female"},
+            {value: "male", label: "Male"},
+            {value: "non_binary", label: "Non-binary"},
+            {value: "prefer_not_to_say", label: "Prefer not to say"}
+        ];
+
+        function updateInputField() {
+            var selectedField = fieldSelect.value;
+            var dynamicSelect = document.getElementById("dynamic_select");
+            if (dynamicSelect) {
+                dynamicSelect.remove();
+            }
+            reqInput.style.display = "block";
+            reqInput.setAttribute("type", "text");
+            reqInput.removeAttribute("required");
+
+            if (selectedField === "branch_id") {
+                reqInput.style.display = "none";
+                var select = document.createElement("select");
+                select.id = "dynamic_select";
+                select.className = "form-select";
+                select.required = true;
+                
+                branchChoices.forEach(function(choice) {
+                    var opt = document.createElement("option");
+                    opt.value = choice[0];
+                    opt.textContent = choice[1];
+                    select.appendChild(opt);
+                });
+                inputContainer.appendChild(select);
+                
+                reqInput.value = select.value;
+                select.addEventListener("change", function() {
+                    reqInput.value = select.value;
+                });
+            } else if (selectedField === "gender") {
+                reqInput.style.display = "none";
+                var select = document.createElement("select");
+                select.id = "dynamic_select";
+                select.className = "form-select";
+                select.required = true;
+                
+                genderChoices.forEach(function(choice) {
+                    var opt = document.createElement("option");
+                    opt.value = choice.value;
+                    opt.textContent = choice.label;
+                    select.appendChild(opt);
+                });
+                inputContainer.appendChild(select);
+                
+                reqInput.value = select.value;
+                select.addEventListener("change", function() {
+                    reqInput.value = select.value;
+                });
+            } else if (selectedField === "date_of_birth") {
+                reqInput.setAttribute("type", "date");
+            } else if (selectedField === "graduation_year") {
+                reqInput.setAttribute("type", "number");
+                reqInput.setAttribute("min", "2000");
+                reqInput.setAttribute("max", "2100");
+            }
+        }
+
+        fieldSelect.addEventListener("change", updateInputField);
+        updateInputField();
+    });
+</script>
+{% endblock %}

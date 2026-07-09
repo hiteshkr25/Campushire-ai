@@ -1,0 +1,132 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ drive_item.drive.title }} - CampusHire AI{% endblock %}
+{% block portal_heading %}{{ drive_item.drive.title }}{% endblock %}
+{% block portal_subheading %}{{ drive_item.drive.company.name }} · {{ drive_item.drive.job_role }}{% endblock %}
+{% block breadcrumb_current %}Drive Details{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.drives') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to drives</a>
+{% endblock %}
+
+{% block portal_content %}
+{% set drive = drive_item.drive %}
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Drive overview</h2>
+                        <p>Role details, compensation, schedule, and venue information.</p>
+                    </div>
+                    {% if drive_item.application %}
+                    <span class="badge text-bg-{{ status_badge(drive_item.application.status) }}-subtle text-{{ status_badge(drive_item.application.status) }}">
+                        Applied · {{ drive_item.application.status.value|replace('_', ' ')|title }}
+                    </span>
+                    {% elif drive_item.registration_open %}
+                    <span class="badge text-bg-success-subtle text-success">Registration open</span>
+                    {% else %}
+                    <span class="badge text-bg-secondary-subtle text-secondary">Registration closed</span>
+                    {% endif %}
+                </div>
+
+                <div class="drive-detail-grid mb-4">
+                    <div><small>Company</small><strong>{{ drive.company.name }}</strong></div>
+                    <div><small>Job role</small><strong>{{ drive.job_role }}</strong></div>
+                    <div><small>Package</small><strong>
+                        {% if drive.package_min_lpa and drive.package_max_lpa %}{{ drive.package_min_lpa }}–{{ drive.package_max_lpa }} LPA
+                        {% elif drive.package_max_lpa %}Up to {{ drive.package_max_lpa }} LPA
+                        {% elif drive.package_min_lpa %}From {{ drive.package_min_lpa }} LPA
+                        {% else %}Not disclosed{% endif %}
+                    </strong></div>
+                    <div><small>Location type</small><strong>{{ drive.location_type.value|replace('_', ' ')|title }}</strong></div>
+                    <div><small>Drive date</small><strong>{{ drive.drive_date.strftime('%d %b %Y') if drive.drive_date else 'TBA' }}</strong></div>
+                    <div><small>Registration deadline</small><strong>{{ drive.registration_deadline.strftime('%d %b %Y, %I:%M %p') if drive.registration_deadline else 'Not set' }}</strong></div>
+                    <div><small>Venue</small><strong>{{ drive.venue or drive.meeting_link or 'To be announced' }}</strong></div>
+                    <div><small>Vacancies</small><strong>{{ drive.vacancies }}</strong></div>
+                </div>
+
+                <h3 class="h6 fw-bold">Job description</h3>
+                <div class="drive-description">{{ drive.job_description }}</div>
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Eligibility checklist</h2>
+                        <p>Automated checks against your profile and drive rules.</p>
+                    </div>
+                    <span class="drive-eligibility-pill {{ 'eligible' if drive_item.eligibility.eligible else 'not-eligible' }}">
+                        <i class="fa-solid {{ 'fa-circle-check' if drive_item.eligibility.eligible else 'fa-circle-xmark' }}"></i>
+                        <span>{{ 'Eligible' if drive_item.eligibility.eligible else 'Not eligible' }}</span>
+                    </span>
+                </div>
+                <ul class="student-checklist eligibility-checklist">
+                    {% for check in drive_item.eligibility.checks %}
+                    <li class="{{ 'done' if check.passed else '' }}">
+                        <i class="fa-solid {{ 'fa-check' if check.passed else 'fa-xmark' }}"></i>
+                        <div>
+                            <strong>{{ check.label }}{% if not check.is_mandatory %} <span class="text-muted">(optional)</span>{% endif %}</strong>
+                            <small>{{ check.message }}</small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Apply to this drive</h2>
+                        <p>Submit your application with an active resume.</p>
+                    </div>
+                </div>
+
+                {% set active_application_statuses = ['draft', 'submitted', 'under_review', 'shortlisted', 'interview_in_progress', 'selected', 'offered', 'placed'] %}
+                {% if drive_item.application and drive_item.application.status.value in active_application_statuses %}
+                <div class="alert alert-info small">
+                    You already have an active application for this drive.
+                </div>
+                <a href="{{ url_for('student.application_detail', application_id=drive_item.application.id) }}" class="btn btn-primary w-100">
+                    View application
+                </a>
+                {% elif drive_item.eligibility.eligible and drive_item.registration_open and apply_form.resume_id.choices and apply_form.resume_id.choices[0][0] %}
+                <form method="POST" action="{{ url_for('student.apply_drive', drive_id=drive.id) }}" novalidate>
+                    {{ apply_form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ apply_form.resume_id.label(class="form-label") }}
+                        {{ apply_form.resume_id(class="form-select" + (" is-invalid" if apply_form.resume_id.errors else "")) }}
+                        {% for error in apply_form.resume_id.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ apply_form.cover_note.label(class="form-label") }}
+                        {{ apply_form.cover_note(class="form-control", rows="4", placeholder="Optional note for recruiters") }}
+                    </div>
+                    {{ apply_form.submit(class="btn btn-primary w-100") }}
+                </form>
+                {% elif not apply_form.resume_id.choices or not apply_form.resume_id.choices[0][0] %}
+                <div class="alert alert-warning small">
+                    Upload at least one resume before applying.
+                </div>
+                <a href="{{ url_for('student.resumes') }}" class="btn btn-outline-primary w-100">Go to resumes</a>
+                {% elif not drive_item.eligibility.eligible %}
+                <div class="alert alert-danger small">
+                    You do not meet the eligibility requirements for this drive.
+                </div>
+                {% else %}
+                <div class="alert alert-secondary small">
+                    Registration is closed for this drive.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

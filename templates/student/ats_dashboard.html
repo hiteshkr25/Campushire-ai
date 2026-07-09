@@ -1,0 +1,107 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}ATS Rank Match Dashboard - CampusHire AI{% endblock %}
+{% block portal_heading %}ATS Rank Match Dashboard{% endblock %}
+{% block portal_subheading %}Review how well your active resume matches the requirements of active hiring campaigns.{% endblock %}
+{% block breadcrumb_current %}ATS Rank Match{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('student.resumes') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-folder-open me-1"></i>Manage Resumes</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Statistics Summary Grid -->
+{% set total_drives = drives|length %}
+{% set highest_score = 0 %}
+{% set total_score = 0 %}
+{% for d in drives %}
+    {% if d.ats_score > highest_score %}
+        {% set highest_score = d.ats_score %}
+    {% endif %}
+    {% set total_score = total_score + d.ats_score %}
+{% endfor %}
+{% set avg_score = (total_score / total_drives)|round(1) if total_drives > 0 else 0.0 %}
+
+<div class="row g-3 mb-4 text-start">
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 p-3 h-100">
+            <span class="metric-icon bg-primary-subtle text-primary mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-graduation-cap"></i></span>
+            <small class="text-muted">Target Drives Evaluated</small>
+            <strong class="fs-4">{{ total_drives }}</strong>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 p-3 h-100">
+            <span class="metric-icon bg-success-subtle text-success mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-circle-check"></i></span>
+            <small class="text-muted">Highest ATS Score</small>
+            <strong class="fs-4 text-success">{{ highest_score }}%</strong>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 p-3 h-100">
+            <span class="metric-icon bg-warning-subtle text-warning mb-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="fa-solid fa-chart-simple"></i></span>
+            <small class="text-muted">Average Match Score</small>
+            <strong class="fs-4 text-warning">{{ avg_score }}%</strong>
+        </div>
+    </div>
+</div>
+
+<!-- Active campaigns matching dashboard list -->
+<div class="card dashboard-panel glass-dashboard-card border-0 text-start">
+    <div class="card-body">
+        <h2 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-briefcase me-2 text-primary"></i>Active Hiring Campaigns ATS Match</h2>
+        
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0 small">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Hiring Campaign</th>
+                        <th>Job Role</th>
+                        <th>Target Company</th>
+                        <th>Missing Core Skills</th>
+                        <th>ATS Match Score</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in drives %}
+                    {% set d = item.drive %}
+                    <tr>
+                        <td><strong>{{ d.title }}</strong></td>
+                        <td>{{ d.job_role }}</td>
+                        <td><span class="badge text-bg-light border text-muted">{{ d.company.name }}</span></td>
+                        <td>
+                            {% if item.missing_count > 0 %}
+                            <span class="badge text-bg-warning-subtle text-warning border">{{ item.missing_count }} missing</span>
+                            {% else %}
+                            <span class="badge text-bg-success-subtle text-success border"><i class="fa-solid fa-circle-check me-1"></i>0 missing</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set score = item.ats_score %}
+                            {% set color_class = 'danger' %}
+                            {% if score >= 75 %}{% set color_class = 'success' %}
+                            {% elif score >= 50 %}{% set color_class = 'warning' %}
+                            {% endif %}
+                            <div class="d-flex align-items-center gap-2">
+                                <strong class="text-{{ color_class }} fs-6">{{ score }}%</strong>
+                                <div class="progress" style="width: 70px; height: 6px;">
+                                    <div class="progress-bar bg-{{ color_class }}" role="progressbar" style="width: {{ score }}%" aria-valuenow="{{ score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('student.view_ats_details', drive_id=d.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>Breakdown details</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No active hiring campaigns are currently recruiting. Check back soon.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

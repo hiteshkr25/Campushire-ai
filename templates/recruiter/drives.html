@@ -1,0 +1,247 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Hiring Drives - CampusHire AI{% endblock %}
+{% block portal_heading %}Hiring Drives{% endblock %}
+{% block portal_subheading %}All placement drives associated with {{ company.name }}. Contact your college TPO to create a new drive.{% endblock %}
+{% block breadcrumb_current %}Hiring Drives{% endblock %}
+
+{% block portal_content %}
+
+<!-- Status filter tabs -->
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+    <div class="card-body pb-0">
+        <ul class="nav nav-tabs border-0" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link small py-2 {% if not current_status %}active{% endif %}"
+                   href="{{ url_for('recruiter.drives') }}">
+                    <i class="fa-solid fa-list me-1"></i>All Drives
+                </a>
+            </li>
+            {% for s in [DriveStatus.PUBLISHED, DriveStatus.ONGOING, DriveStatus.REGISTRATION_CLOSED, DriveStatus.COMPLETED, DriveStatus.DRAFT] %}
+            <li class="nav-item">
+                <a class="nav-link small py-2 {% if current_status == s.value %}active{% endif %}"
+                   href="{{ url_for('recruiter.drives', status=s.value) }}">
+                    {{ s.value.replace('_', ' ')|title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<!-- Drive cards -->
+{% if drives_data %}
+<div class="row g-4">
+    {% for item in drives_data %}
+    {% set drive = item.drive %}
+    {% set applicant_count = item.applicant_count %}
+
+    {# Status badge colour #}
+    {% if drive.status == DriveStatus.PUBLISHED %}
+        {% set badge_class = "text-bg-success" %}
+    {% elif drive.status == DriveStatus.ONGOING %}
+        {% set badge_class = "text-bg-primary" %}
+    {% elif drive.status == DriveStatus.REGISTRATION_CLOSED %}
+        {% set badge_class = "text-bg-warning" %}
+    {% elif drive.status == DriveStatus.COMPLETED %}
+        {% set badge_class = "text-bg-secondary" %}
+    {% elif drive.status == DriveStatus.DRAFT %}
+        {% set badge_class = "text-bg-light border" %}
+    {% else %}
+        {% set badge_class = "text-bg-danger" %}
+    {% endif %}
+
+    <div class="col-md-6 col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body d-flex flex-column gap-3">
+
+                <!-- Drive header -->
+                <div class="d-flex align-items-start justify-content-between gap-2">
+                    <div>
+                        <h2 class="h6 mb-1 text-primary-emphasis">{{ drive.title }}</h2>
+                        <span class="text-muted small">{{ drive.job_role }}</span>
+                    </div>
+                    <span class="badge {{ badge_class }} text-nowrap">
+                        {{ drive.status.value.replace('_', ' ')|title }}
+                    </span>
+                </div>
+
+                <!-- Key details grid -->
+                <div class="row g-2 small">
+                    <div class="col-6">
+                        <span class="text-muted d-block">Package</span>
+                        <strong>
+                            {% if drive.package_min_lpa and drive.package_max_lpa %}
+                                {{ drive.package_min_lpa }} – {{ drive.package_max_lpa }} LPA
+                            {% elif drive.package_min_lpa %}
+                                From {{ drive.package_min_lpa }} LPA
+                            {% else %}
+                                <span class="text-muted">Not specified</span>
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">Vacancies</span>
+                        <strong>{{ drive.vacancies }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">Applicants</span>
+                        <strong class="text-primary">{{ applicant_count }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">Location</span>
+                        <strong>{{ drive.location_type.value.replace('_', ' ')|title }}</strong>
+                    </div>
+                    {% if drive.drive_date %}
+                    <div class="col-6">
+                        <span class="text-muted d-block">Drive Date</span>
+                        <strong>{{ drive.drive_date.strftime('%d %b %Y') }}</strong>
+                    </div>
+                    {% endif %}
+                    {% if drive.registration_deadline %}
+                    <div class="col-6">
+                        <span class="text-muted d-block">Deadline</span>
+                        <strong>{{ drive.registration_deadline.strftime('%d %b %Y') }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Eligible branches -->
+                {% set branches = drive.drive_branches.all() %}
+                {% if branches %}
+                <div class="small">
+                    <span class="text-muted d-block mb-1">Eligible Branches</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for db_entry in branches %}
+                        <span class="badge text-bg-primary-subtle text-primary border border-primary-subtle">
+                            {{ db_entry.branch.code if db_entry.branch else '—' }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Eligibility rules summary -->
+                {% set rules = drive.eligibility_rules.all() %}
+                {% if rules %}
+                <div class="small">
+                    <span class="text-muted d-block mb-1">Eligibility Criteria</span>
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
+                        {% for rule in rules %}
+                        <li class="d-flex align-items-center gap-1">
+                            <i class="fa-solid fa-circle-check text-success" style="font-size:.65rem;"></i>
+                            <span>
+                                {{ rule.rule_type.value.replace('_', ' ')|title }}
+                                {{ rule.operator.value }}
+                                <strong>{{ rule.rule_value }}</strong>
+                                {% if not rule.is_mandatory %}
+                                <span class="text-muted">(optional)</span>
+                                {% endif %}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Job description excerpt -->
+                {% if drive.job_description %}
+                <p class="small text-muted mb-0 lh-sm" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                    {{ drive.job_description }}
+                </p>
+                {% endif %}
+
+                <!-- Action buttons -->
+                <div class="mt-auto d-flex gap-2 flex-wrap">
+                    {% if applicant_count > 0 %}
+                    <a href="{{ url_for('recruiter.candidates', drive_id=drive.id) }}"
+                       class="btn btn-primary btn-sm flex-fill">
+                        <i class="fa-solid fa-users-viewfinder me-1"></i>
+                        Review Candidates ({{ applicant_count }})
+                    </a>
+                    <a href="{{ url_for('recruiter.drive_ats_rankings', drive_id=drive.id) }}"
+                       class="btn btn-outline-info btn-sm">
+                        <i class="fa-solid fa-ranking-star me-1"></i>ATS Rankings
+                    </a>
+                    {% else %}
+                    <span class="btn btn-outline-secondary btn-sm flex-fill disabled">
+                        <i class="fa-solid fa-user-clock me-1"></i>No applicants yet
+                    </span>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<!-- Empty state -->
+<div class="card dashboard-panel glass-dashboard-card border-0">
+    <div class="card-body text-center py-5">
+        <span class="metric-icon bg-secondary-subtle text-secondary d-inline-flex mb-3" style="width:56px;height:56px;border-radius:50%;align-items:center;justify-content:center;font-size:1.4rem;">
+            <i class="fa-solid fa-briefcase"></i>
+        </span>
+        <h3 class="h5 mb-2">No hiring drives found</h3>
+        {% if current_status %}
+        <p class="text-muted mb-3">No drives with status <strong>{{ current_status.replace('_', ' ')|title }}</strong> for {{ company.name }}.</p>
+        <a href="{{ url_for('recruiter.drives') }}" class="btn btn-outline-primary btn-sm">View all drives</a>
+        {% else %}
+        <p class="text-muted mb-3">
+            No placement drives have been created for <strong>{{ company.name }}</strong> yet.<br>
+            <span class="small">Ask the college TPO to create a drive for your company — they set the job details, eligibility rules, and publish it so students can apply.</span>
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- How drives work — info panel -->
+<div class="card dashboard-panel glass-dashboard-card border-0 mt-4">
+    <div class="card-body">
+        <h3 class="h6 mb-3 border-bottom pb-2">
+            <i class="fa-solid fa-circle-info me-2 text-primary"></i>How Hiring Drives Work
+        </h3>
+        <div class="row g-3 small">
+            <div class="col-sm-6 col-lg-3">
+                <div class="d-flex gap-2 align-items-start">
+                    <span class="badge rounded-pill bg-primary text-white mt-1" style="min-width:1.5rem;">1</span>
+                    <div>
+                        <strong class="d-block">TPO Creates Drive</strong>
+                        <span class="text-muted">The college TPO posts the drive with job role, salary range, CGPA cutoff, required skills, eligible branches, and interview rounds.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="d-flex gap-2 align-items-start">
+                    <span class="badge rounded-pill bg-info text-white mt-1" style="min-width:1.5rem;">2</span>
+                    <div>
+                        <strong class="d-block">Students Apply</strong>
+                        <span class="text-muted">Eligible students see the published drive and submit applications with their resume. The AI ATS scorer ranks them automatically.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="d-flex gap-2 align-items-start">
+                    <span class="badge rounded-pill bg-warning text-dark mt-1" style="min-width:1.5rem;">3</span>
+                    <div>
+                        <strong class="d-block">You Evaluate & Interview</strong>
+                        <span class="text-muted">Review candidate profiles, check ATS rankings, shortlist candidates, and schedule interview rounds (aptitude, technical, HR, etc.).</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="d-flex gap-2 align-items-start">
+                    <span class="badge rounded-pill bg-success text-white mt-1" style="min-width:1.5rem;">4</span>
+                    <div>
+                        <strong class="d-block">Release Offers</strong>
+                        <span class="text-muted">For selected candidates, release a formal offer letter with the salary package, job location, joining date, and acceptance deadline.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

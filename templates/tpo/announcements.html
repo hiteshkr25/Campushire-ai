@@ -1,0 +1,104 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Announcements — CampusHire AI{% endblock %}
+{% block portal_heading %}Announcements{% endblock %}
+{% block portal_subheading %}Publish notices to students, recruiters, and the placement office.{% endblock %}
+{% block breadcrumb_current %}Announcements{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4">
+
+    <!-- ── Compose panel ─────────────────────────────────────────────────── -->
+    <div class="col-lg-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 sticky-top" style="top:80px;">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2">
+                    <i class="fa-solid fa-bullhorn me-2 text-warning"></i>New Announcement
+                </h3>
+                <form method="POST" action="{{ url_for('tpo.announcements') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label for="ann_title" class="form-label small fw-semibold">Title <span class="text-danger">*</span></label>
+                        <input type="text" id="ann_title" name="title" class="form-control form-control-sm"
+                               placeholder="e.g. Campus Drive by Infosys on 20 Aug"
+                               maxlength="255" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ann_content" class="form-label small fw-semibold">Content <span class="text-danger">*</span></label>
+                        <textarea id="ann_content" name="content" class="form-control form-control-sm"
+                                  rows="5" placeholder="Write your announcement here…" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ann_audience" class="form-label small fw-semibold">Target Audience</label>
+                        <select id="ann_audience" name="audience" class="form-select form-select-sm">
+                            {% for val, label in audience_choices %}
+                            <option value="{{ val }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" id="ann_pinned" name="is_pinned" class="form-check-input">
+                        <label for="ann_pinned" class="form-check-label small">Pin this announcement</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fa-solid fa-paper-plane me-1"></i>Publish
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Announcements list ─────────────────────────────────────────────── -->
+    <div class="col-lg-8">
+        {% if announcements %}
+            {% for ann in announcements %}
+            <div class="card glass-dashboard-card border-0 mb-3 {% if ann.is_pinned %}border-start border-3 border-warning{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between gap-2">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                {% if ann.is_pinned %}
+                                <span class="badge text-bg-warning-subtle text-warning">
+                                    <i class="fa-solid fa-thumbtack me-1"></i>Pinned
+                                </span>
+                                {% endif %}
+                                <span class="badge text-bg-info-subtle text-info">
+                                    {{ ann.target_audience.value|title }}
+                                </span>
+                            </div>
+                            <h5 class="mb-1">{{ ann.title }}</h5>
+                            <p class="text-muted small mb-2" style="white-space:pre-line;">{{ ann.content }}</p>
+                            <small class="text-muted">
+                                <i class="fa-regular fa-clock me-1"></i>
+                                Published {{ ann.published_at.strftime('%d %b %Y, %I:%M %p') if ann.published_at else '—' }}
+                            </small>
+                        </div>
+                        <form method="POST"
+                              action="{{ url_for('tpo.delete_announcement', ann_id=ann.id) }}"
+                              onsubmit="return confirm('Delete this announcement?');"
+                              class="flex-shrink-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card glass-dashboard-card border-0">
+                <div class="card-body text-center py-5 text-muted">
+                    <i class="fa-solid fa-bullhorn fa-3x mb-3 opacity-25"></i>
+                    <p class="mb-0 fs-6">No announcements yet.<br>Use the form on the left to publish your first one.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

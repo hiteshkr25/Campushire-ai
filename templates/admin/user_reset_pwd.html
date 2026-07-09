@@ -1,0 +1,39 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Reset Password - CampusHire AI{% endblock %}
+{% block portal_heading %}Reset Password Credentials{% endblock %}
+{% block portal_subheading %}Override password credentials for user account: {{ user_record.email }}.{% endblock %}
+{% block breadcrumb_current %}Users / Reset Password{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('admin.users_list') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Directory</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row justify-content-center text-start">
+    <div class="col-lg-8 col-xl-6">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <form method="POST" action="" class="small">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <span class="text-muted d-block small">Target Account:</span>
+                        <strong class="text-primary-emphasis fs-6">{{ user_record.email }}</strong>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold">New Secure Password</label>
+                        {{ form.new_password(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="password", placeholder="Enter new password...") }}
+                        {% for error in form.new_password.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-danger btn-sm w-100 p-2"><i class="fa-solid fa-key me-1"></i>Reset Password Credentials</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

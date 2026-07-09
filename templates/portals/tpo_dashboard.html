@@ -1,0 +1,603 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}TPO Dashboard - CampusHire AI{% endblock %}
+{% block portal_heading %}TPO Dashboard{% endblock %}
+{% block portal_subheading %}Coordinate student verification, recruiter activity, announcements, and drive operations.{% endblock %}
+{% block breadcrumb_current %}TPO Overview{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('tpo.create_drive') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-briefcase me-1"></i>New Drive</a>
+<a href="{{ url_for('tpo.announcements') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-bullhorn me-1"></i>Announcement</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Main Stats Row -->
+<div class="row g-3 mb-4">
+    <!-- Total Students Card -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-primary-subtle text-primary"><i class="fa-solid fa-users"></i></span>
+                    <span class="badge text-bg-primary-subtle text-primary">Total</span>
+                </div>
+                <small>Total Students</small>
+                <strong>{{ stats.total_students }}</strong>
+                <em>Registered in college</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Placed Students Card -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-success-subtle text-success"><i class="fa-solid fa-user-graduate"></i></span>
+                    <span class="badge text-bg-success-subtle text-success">Placed</span>
+                </div>
+                <small>Placed / Unplaced</small>
+                <strong>{{ stats.placed_students }} <span class="fs-6 text-muted">/ {{ stats.unplaced_students }}</span></strong>
+                <div class="progress stat-progress" role="progressbar" aria-label="Placement progress" aria-valuenow="{{ stats.placement_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar bg-success" style="width: {{ stats.placement_percentage }}%"></div>
+                </div>
+                <em>{{ stats.unplaced_students }} seeking jobs</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Placement Percentage Card -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-info-subtle text-info"><i class="fa-solid fa-chart-line"></i></span>
+                    <span class="badge text-bg-info-subtle text-info">Rate</span>
+                </div>
+                <small>Placement Rate</small>
+                <strong>{{ stats.placement_percentage }}%</strong>
+                <div class="progress stat-progress" role="progressbar" aria-label="Placement percentage" aria-valuenow="{{ stats.placement_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar bg-info" style="width: {{ stats.placement_percentage }}%"></div>
+                </div>
+                <em>Current batch success</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Packages Card -->
+    <div class="col-md-6 col-xl-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-warning-subtle text-warning"><i class="fa-solid fa-sack-dollar"></i></span>
+                    <span class="badge text-bg-warning-subtle text-warning">Package</span>
+                </div>
+                <small>Highest / Avg LPA</small>
+                <strong>{{ stats.highest_package }} <span class="fs-6 text-muted">/ {{ "%.1f"|format(stats.average_package) }}</span></strong>
+                <em>Salary range in LPA</em>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Drive Stats & Actions Row -->
+<div class="row g-3 mb-4">
+    <!-- Active Drives Card -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-primary-subtle text-primary"><i class="fa-solid fa-briefcase"></i></span>
+                    <span class="badge text-bg-primary-subtle text-primary">Drives</span>
+                </div>
+                <small>Active Drives</small>
+                <strong>{{ stats.active_drives }}</strong>
+                <em>Live on campus</em>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Drive Breakdowns Card -->
+    <div class="col-md-6 col-lg-5">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body py-2">
+                <div class="panel-header mb-2">
+                    <div>
+                        <h2>Drive Statistics</h2>
+                        <p class="mb-0">Breakdown of campus placement drives</p>
+                    </div>
+                </div>
+                <div class="row g-2 text-center mt-2">
+                    <div class="col-3">
+                        <div class="bg-body-secondary p-2 rounded-3">
+                            <span class="d-block text-muted small">Draft</span>
+                            <strong class="fs-5">{{ drive_stats.draft }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="bg-primary-subtle p-2 rounded-3 text-primary">
+                            <span class="d-block small text-primary-emphasis">Published</span>
+                            <strong class="fs-5">{{ drive_stats.published }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="bg-warning-subtle p-2 rounded-3 text-warning-emphasis">
+                            <span class="d-block small text-warning-emphasis">Ongoing</span>
+                            <strong class="fs-5">{{ drive_stats.ongoing }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="bg-success-subtle p-2 rounded-3 text-success">
+                            <span class="d-block small text-success-emphasis">Closed</span>
+                            <strong class="fs-5">{{ drive_stats.closed }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Action Card -->
+    <div class="col-md-12 col-lg-4">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="stat-card-top">
+                    <span class="metric-icon bg-danger-subtle text-danger"><i class="fa-solid fa-user-check"></i></span>
+                    <span class="badge text-bg-danger-subtle text-danger">Actions</span>
+                </div>
+                <small>Pending Verifications</small>
+                <strong>{{ stats.pending_verifications }}</strong>
+                <em>Students awaiting TPO approval</em>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-4 mb-4">
+    <!-- Yearly Placement Trends -->
+    <div class="col-xl-6">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Placement Trends</h2>
+                        <p>Year-on-year placement rates and average packages.</p>
+                    </div>
+                </div>
+                <div class="student-chart-wrap">
+                    <canvas id="placementTrendsChart" aria-label="Yearly placement trends chart" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branch-wise Performance -->
+    <div class="col-xl-6">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Branch Performance</h2>
+                        <p>Total vs. Placed students by academic branch.</p>
+                    </div>
+                </div>
+                <div class="student-chart-wrap">
+                    <canvas id="branchPlacementsChart" aria-label="Branch placement performance chart" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-4 mb-4">
+    <!-- Package Distribution -->
+    <div class="col-xl-5">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Salary Package Distribution</h2>
+                        <p>Breakdown of placed student salary packages in LPA.</p>
+                    </div>
+                </div>
+                <div class="student-chart-wrap d-flex justify-content-center align-items-center">
+                    <canvas id="packageDistributionChart" aria-label="Package distribution chart" role="img" style="max-height: 300px; max-width: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Recruiter Stats -->
+    <div class="col-xl-7">
+        <div class="card dashboard-panel glass-dashboard-card border-0 h-100">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Top Placement Partners</h2>
+                        <p>Top companies placing students from this college.</p>
+                    </div>
+                </div>
+                <div class="student-chart-wrap">
+                    <canvas id="companyPlacementsChart" aria-label="Top placement partners chart" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lists Row -->
+<div class="row g-4">
+    <!-- Left Column: Tables -->
+    <div class="col-xl-8">
+        <!-- Recent Offers -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Recent Offers</h2>
+                        <p>Latest offers extended to college students.</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle mb-0">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th>Student</th>
+                                <th>Company</th>
+                                <th>Role</th>
+                                <th>Package</th>
+                                <th>Offer Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_offers %}
+                                {% for offer in recent_offers %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center">{{ offer.student_name[:1]|upper }}</span>
+                                            <strong>{{ offer.student_name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>{{ offer.company_name }}</td>
+                                    <td><span class="badge text-bg-light border">{{ offer.job_role }}</span></td>
+                                    <td><strong class="text-success">{{ offer.package }} LPA</strong></td>
+                                    <td><small class="text-muted">{{ offer.offer_date.strftime('%d %b %Y') if offer.offer_date else 'Not set' }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="fa-solid fa-gift fa-2x mb-2 text-muted opacity-50"></i>
+                                        <p class="mb-0">No job offers found.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Placement Drives -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Recent Placement Drives</h2>
+                        <p>Recent campus recruitment drives.</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle mb-0">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th>Company</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Registered</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_drives %}
+                                {% for drive in recent_drives %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="company-logo bg-primary-subtle text-primary fs-6 d-flex align-items-center justify-content-center">{{ drive.company_name[:2]|upper }}</span>
+                                            <strong>{{ drive.company_name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>{{ drive.job_role }}</td>
+                                    <td>
+                                        {% set badge_theme = 'secondary' %}
+                                        {% if drive.status.value == 'published' %}{% set badge_theme = 'success' %}
+                                        {% elif drive.status.value == 'ongoing' %}{% set badge_theme = 'warning' %}
+                                        {% elif drive.status.value == 'registration_closed' %}{% set badge_theme = 'danger' %}
+                                        {% endif %}
+                                        <span class="badge text-bg-{{ badge_theme }}-subtle text-{{ badge_theme }}">
+                                            {{ drive.status.value|replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                    <td><strong class="text-primary">{{ drive.reg_count }}</strong> students</td>
+                                    <td>
+                                        <a href="{{ url_for('tpo.view_drive', drive_id=drive.id) }}" class="btn btn-outline-secondary btn-sm">Manage</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="fa-solid fa-briefcase fa-2x mb-2 text-muted opacity-50"></i>
+                                        <p class="mb-0">No placement drives found.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Verification List & Operations -->
+    <div class="col-xl-4">
+        <!-- Student Verifications -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="panel-header">
+                    <div>
+                        <h2>Student Verifications</h2>
+                        <p class="mb-0">Pending profile approval</p>
+                    </div>
+                </div>
+                <div class="student-notification-list mt-3">
+                    {% if pending_students %}
+                        {% for student in pending_students %}
+                        <div class="student-notification unread align-items-center p-2 mb-2 border rounded">
+                            <span class="user-avatar user-avatar-sm bg-warning text-dark d-flex align-items-center justify-content-center">{{ student.first_name[:1]|upper }}</span>
+                            <div class="ms-2 flex-grow-1">
+                                <strong class="d-block">{{ student.full_name }}</strong>
+                                <small class="text-muted d-block">{{ student.branch.code }} · CGPA: {{ student.cgpa or 'N/A' }}</small>
+                            </div>
+                            <a href="{{ url_for('tpo.review_student', student_id=student.id) }}" class="btn btn-primary btn-sm px-3">Verify</a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-circle-check fa-2x mb-2 text-success opacity-75"></i>
+                            <p class="mb-0">All student profiles verified!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Operations Card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header mb-3">
+                    <h2>Placement Operations</h2>
+                </div>
+                <ul class="action-list">
+                    <a href="{{ url_for('tpo.verification') }}" class="text-decoration-none text-reset">
+                    <li class="p-2 mb-2 border rounded">
+                        <i class="fa-solid fa-user-check text-primary"></i>
+                        <span>Approve Student Profiles</span>
+                    </li>
+                    </a>
+                    <a href="{{ url_for('tpo.create_drive') }}" class="text-decoration-none text-reset">
+                    <li class="p-2 mb-2 border rounded">
+                        <i class="fa-solid fa-briefcase text-success"></i>
+                        <span>Create Placement Drive</span>
+                    </li>
+                    </a>
+                    <a href="{{ url_for('tpo.announcements') }}" class="text-decoration-none text-reset">
+                    <li class="p-2 mb-2 border rounded">
+                        <i class="fa-solid fa-bullhorn text-warning"></i>
+                        <span>Publish Announcement</span>
+                    </li>
+                    </a>
+                    <a href="{{ url_for('tpo.analytics') }}" class="text-decoration-none text-reset">
+                    <li class="p-2 mb-2 border rounded">
+                        <i class="fa-solid fa-chart-pie text-info"></i>
+                        <span>Generate Yearly Report</span>
+                    </li>
+                    </a>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    // Safely retrieve serialized data from Flask/Jinja
+    const branchStats = {{ branch_stats|tojson }};
+    const packageDist = {{ package_dist|tojson }};
+    const companyStats = {{ company_stats|tojson }};
+    const yearlyTrends = {{ yearly_trends|tojson }};
+
+    // Grab styled theme variables from DOM
+    const css = getComputedStyle(document.documentElement);
+    const textColor = css.getPropertyValue('--dash-text').trim() || '#162033';
+    const mutedColor = css.getPropertyValue('--dash-muted').trim() || '#64708a';
+    const primaryColor = css.getPropertyValue('--dash-primary').trim() || '#4f46e5';
+    const accentColor = css.getPropertyValue('--dash-accent').trim() || '#06b6d4';
+
+    // Chart.js Default styling tweaks
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = 'rgba(100, 112, 138, 0.12)';
+
+    // --- 1. Yearly Placement Trends Chart ---
+    const trendsCtx = document.getElementById('placementTrendsChart');
+    if (trendsCtx && yearlyTrends.length > 0) {
+        new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: yearlyTrends.map(t => t.year),
+                datasets: [
+                    {
+                        label: 'Placement Rate (%)',
+                        data: yearlyTrends.map(t => t.placement_rate),
+                        borderColor: primaryColor,
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.35,
+                        fill: true,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Average Salary (LPA)',
+                        data: yearlyTrends.map(t => t.average_package),
+                        borderColor: accentColor,
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.35,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { usePointStyle: true, boxWidth: 6 } }
+                },
+                scales: {
+                    x: { ticks: { color: mutedColor } },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        min: 0,
+                        max: 100,
+                        ticks: { color: mutedColor },
+                        title: { display: true, text: 'Placement Rate (%)', color: mutedColor }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        min: 0,
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: mutedColor },
+                        title: { display: true, text: 'Package (LPA)', color: mutedColor }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- 2. Branch Performance Chart ---
+    const branchCtx = document.getElementById('branchPlacementsChart');
+    if (branchCtx && branchStats.length > 0) {
+        new Chart(branchCtx, {
+            type: 'bar',
+            data: {
+                labels: branchStats.map(b => b.code),
+                datasets: [
+                    {
+                        label: 'Total Students',
+                        data: branchStats.map(b => b.total),
+                        backgroundColor: '#64708a',
+                        borderRadius: 6,
+                    },
+                    {
+                        label: 'Placed Students',
+                        data: branchStats.map(b => b.placed),
+                        backgroundColor: '#14b8a6',
+                        borderRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { usePointStyle: true, boxWidth: 6 } }
+                },
+                scales: {
+                    x: { ticks: { color: mutedColor } },
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { color: mutedColor, stepSize: 1 } 
+                    }
+                }
+            }
+        });
+    }
+
+    // --- 3. Package Distribution Chart ---
+    const packageCtx = document.getElementById('packageDistributionChart');
+    if (packageCtx) {
+        new Chart(packageCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['< 5 LPA', '5 - 10 LPA', '10 - 15 LPA', '15+ LPA'],
+                datasets: [{
+                    data: [
+                        packageDist.under_5,
+                        packageDist["5_to_10"],
+                        packageDist["10_to_15"],
+                        packageDist.over_15
+                    ],
+                    backgroundColor: ['#fb7185', '#fb923c', '#38bdf8', '#34d399'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6 } }
+                },
+                cutout: '68%'
+            }
+        });
+    }
+
+    // --- 4. Company Placements Chart ---
+    const companyCtx = document.getElementById('companyPlacementsChart');
+    if (companyCtx && companyStats.length > 0) {
+        new Chart(companyCtx, {
+            type: 'bar',
+            data: {
+                labels: companyStats.map(c => c.company_name),
+                datasets: [{
+                    label: 'Students Placed',
+                    data: companyStats.map(c => c.placed),
+                    backgroundColor: primaryColor,
+                    borderRadius: 6,
+                    maxBarThickness: 32
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { 
+                        beginAtZero: true, 
+                        ticks: { color: mutedColor, stepSize: 1 } 
+                    },
+                    y: { ticks: { color: mutedColor } }
+                }
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

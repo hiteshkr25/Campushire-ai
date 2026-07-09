@@ -1,0 +1,209 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ title }} - CampusHire AI{% endblock %}
+{% block portal_heading %}{{ title }}{% endblock %}
+{% block portal_subheading %}{% if drive %}Modify drive configurations and eligibility rules for {{ drive.title }}{% else %}Register a new campus hiring campaign and configure eligibility restrictions.{% endif %}{% endblock %}
+{% block breadcrumb_current %}{% if drive %}{{ drive.title }} / Edit{% else %}New Drive{% endif %}{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('tpo.drives') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Drives</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Basic Campaign Details Section -->
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-briefcase me-2 text-primary"></i>Campaign Information</h2>
+                    
+                    <div class="row g-3 mb-4">
+                        <!-- Hiring Company -->
+                        <div class="col-md-6">
+                            {{ form.company_id.label(class="form-label") }}
+                            {{ form.company_id(class="form-select" ~ (" is-invalid" if form.company_id.errors else "")) }}
+                            {% for error in form.company_id.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Drive Title -->
+                        <div class="col-md-6">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control" ~ (" is-invalid" if form.title.errors else ""), placeholder="e.g. QuantaVerse Engineering Drive 2026") }}
+                            {% for error in form.title.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Job Role -->
+                        <div class="col-md-6">
+                            {{ form.job_role.label(class="form-label") }}
+                            {{ form.job_role(class="form-control" ~ (" is-invalid" if form.job_role.errors else ""), placeholder="e.g. Software Engineer (Backend)") }}
+                            {% for error in form.job_role.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Vacancies -->
+                        <div class="col-md-6">
+                            {{ form.vacancies.label(class="form-label") }}
+                            {{ form.vacancies(class="form-control" ~ (" is-invalid" if form.vacancies.errors else "")) }}
+                            {% for error in form.vacancies.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Packages -->
+                        <div class="col-md-6">
+                            {{ form.package_min_lpa.label(class="form-label") }}
+                            {{ form.package_min_lpa(class="form-control" ~ (" is-invalid" if form.package_min_lpa.errors else ""), placeholder="e.g. 6.00") }}
+                            {% for error in form.package_min_lpa.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6">
+                            {{ form.package_max_lpa.label(class="form-label") }}
+                            {{ form.package_max_lpa(class="form-control" ~ (" is-invalid" if form.package_max_lpa.errors else ""), placeholder="e.g. 12.00") }}
+                            {% for error in form.package_max_lpa.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Logistics Section -->
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-map-location-dot me-2 text-success"></i>Job Logistics</h2>
+                    
+                    <div class="row g-3 mb-4">
+                        <!-- Location Type -->
+                        <div class="col-md-4">
+                            {{ form.location_type.label(class="form-label") }}
+                            {{ form.location_type(class="form-select" ~ (" is-invalid" if form.location_type.errors else "")) }}
+                            {% for error in form.location_type.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Venue -->
+                        <div class="col-md-4">
+                            {{ form.venue.label(class="form-label") }}
+                            {{ form.venue(class="form-control" ~ (" is-invalid" if form.venue.errors else ""), placeholder="e.g. Seminar Hall A, CSE Dept") }}
+                            {% for error in form.venue.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Meeting Link -->
+                        <div class="col-md-4">
+                            {{ form.meeting_link.label(class="form-label") }}
+                            {{ form.meeting_link(class="form-control" ~ (" is-invalid" if form.meeting_link.errors else ""), placeholder="https://zoom.us/...") }}
+                            {% for error in form.meeting_link.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Drive Date -->
+                        <div class="col-md-4">
+                            {{ form.drive_date.label(class="form-label") }}
+                            {{ form.drive_date(class="form-control" ~ (" is-invalid" if form.drive_date.errors else "")) }}
+                            {% for error in form.drive_date.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Registration Deadline -->
+                        <div class="col-md-4">
+                            {{ form.registration_deadline.label(class="form-label") }}
+                            {{ form.registration_deadline(class="form-control" ~ (" is-invalid" if form.registration_deadline.errors else "")) }}
+                            {% for error in form.registration_deadline.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-4">
+                            {{ form.status.label(class="form-label") }}
+                            {{ form.status(class="form-select" ~ (" is-invalid" if form.status.errors else "")) }}
+                            {% for error in form.status.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Target Branches Mapping -->
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-graduation-cap me-2 text-info"></i>Target Academic Branches</h2>
+                    
+                    <div class="mb-4">
+                        {{ form.eligible_branches.label(class="form-label fw-bold") }}
+                        <small class="d-block text-muted mb-2">Select all academic branches eligible to register for this drive (Hold Ctrl/Cmd to select multiple)</small>
+                        {{ form.eligible_branches(class="form-select" ~ (" is-invalid" if form.eligible_branches.errors else ""), size=6) }}
+                        {% for error in form.eligible_branches.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Eligibility Rules Configuration -->
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-circle-exclamation me-2 text-warning"></i>Eligibility Limits</h2>
+                    
+                    <div class="row g-3 mb-4">
+                        <!-- Minimum CGPA -->
+                        <div class="col-md-6 col-lg-3">
+                            {{ form.min_cgpa.label(class="form-label") }}
+                            {{ form.min_cgpa(class="form-control" ~ (" is-invalid" if form.min_cgpa.errors else ""), placeholder="e.g. 6.50") }}
+                            {% for error in form.min_cgpa.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Max Backlogs -->
+                        <div class="col-md-6 col-lg-3">
+                            {{ form.max_backlogs.label(class="form-label") }}
+                            {{ form.max_backlogs(class="form-control" ~ (" is-invalid" if form.max_backlogs.errors else "")) }}
+                            {% for error in form.max_backlogs.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Eligible Batch -->
+                        <div class="col-md-6 col-lg-3">
+                            {{ form.batch.label(class="form-label") }}
+                            {{ form.batch(class="form-control" ~ (" is-invalid" if form.batch.errors else ""), placeholder="e.g. 2026") }}
+                            {% for error in form.batch.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Required Skills -->
+                        <div class="col-md-6 col-lg-3">
+                            {{ form.required_skills.label(class="form-label") }}
+                            {{ form.required_skills(class="form-control" ~ (" is-invalid" if form.required_skills.errors else ""), placeholder="e.g. Python, SQL") }}
+                            {% for error in form.required_skills.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Job Description Paragraph -->
+                    <h2 class="h5 mb-4 border-bottom pb-2"><i class="fa-solid fa-paragraph me-2 text-secondary"></i>Job Description Details</h2>
+                    
+                    <div class="mb-4">
+                        {{ form.job_description(class="form-control" ~ (" is-invalid" if form.job_description.errors else ""), rows=8, placeholder="Provide complete role details, CTC splits, responsibilities, and application criteria...") }}
+                        {% for error in form.job_description.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                        <a href="{{ url_for('tpo.drives') }}" class="btn btn-outline-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

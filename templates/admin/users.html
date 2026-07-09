@@ -1,0 +1,196 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}User Management - CampusHire AI{% endblock %}
+{% block portal_heading %}User Management Directory{% endblock %}
+{% block portal_subheading %}Add new system users, configure roles, block accounts, parser roster imports, and track logs.{% endblock %}
+{% block breadcrumb_current %}Users{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('admin.create_user') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-user-plus me-1"></i>Add User</a>
+<a href="{{ url_for('admin.import_users') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-file-csv me-1"></i>Bulk Import</a>
+<a href="{{ url_for('admin.export_users') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-download me-1"></i>Export Roster</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- User statistics breakdown cards -->
+<div class="row g-3 mb-4 text-start">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-2">
+            <small class="text-muted">Total Users</small>
+            <strong class="fs-4">{{ stats.total_users }}</strong>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-2">
+            <small class="text-muted">Students</small>
+            <strong class="fs-4 text-primary">{{ stats.students }}</strong>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-2">
+            <small class="text-muted">Recruiters</small>
+            <strong class="fs-4 text-success">{{ stats.recruiters }}</strong>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-2">
+            <small class="text-muted">TPO Admins</small>
+            <strong class="fs-4 text-warning">{{ stats.tpos }}</strong>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-2">
+            <small class="text-muted">System Admins</small>
+            <strong class="fs-4 text-secondary">{{ stats.admins }}</strong>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100 p-2">
+            <small class="text-muted">Locked Accounts</small>
+            <strong class="fs-4 text-danger">{{ stats.locked }}</strong>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filtering Panels -->
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('admin.users_list') }}" class="row g-2 small text-start">
+            <div class="col-sm-5">
+                <label class="form-label text-muted fw-bold">Search Keywords</label>
+                <input type="text" name="q" value="{{ filters.q }}" class="form-control form-control-sm bg-transparent text-primary-emphasis" placeholder="Search by name, roll number, email...">
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label text-muted fw-bold">System Role</label>
+                <select name="role" class="form-select form-select-sm bg-transparent text-primary-emphasis">
+                    <option value="">All Roles</option>
+                    <option value="student" {% if filters.role == 'student' %}selected{% endif %}>Student</option>
+                    <option value="recruiter" {% if filters.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
+                    <option value="tpo" {% if filters.role == 'tpo' %}selected{% endif %}>TPO Admin</option>
+                    <option value="admin" {% if filters.role == 'admin' %}selected{% endif %}>System Admin</option>
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label text-muted fw-bold">Account Status</label>
+                <select name="status" class="form-select form-select-sm bg-transparent text-primary-emphasis">
+                    <option value="">All Status</option>
+                    <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="locked" {% if filters.status == 'locked' %}selected{% endif %}>Locked / Deactivated</option>
+                </select>
+            </div>
+            <div class="col-sm-2 d-flex align-items-end gap-1">
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Search</button>
+                <a href="{{ url_for('admin.users_list') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-undo"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Roster List -->
+<div class="card dashboard-panel glass-dashboard-card border-0 text-start">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0 small">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>User Account</th>
+                        <th>System Role</th>
+                        <th>Email Verification</th>
+                        <th>Account Access Status</th>
+                        <th>Created Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    {% set profile_name = "System Admin" %}
+                    {% if u.role == UserRole.STUDENT and u.student_profile %}{% set profile_name = u.student_profile.full_name %}
+                    {% elif u.role == UserRole.RECRUITER and u.recruiter_profile %}{% set profile_name = u.recruiter_profile.full_name %}
+                    {% elif u.role == UserRole.TPO and u.tpo_profile %}{% set profile_name = u.tpo_profile.full_name %}
+                    {% endif %}
+                    <tr>
+                        <!-- Email / Avatar -->
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center">{{ profile_name[:1]|upper }}</span>
+                                <div>
+                                    <strong class="d-block">{{ profile_name }}</strong>
+                                    <small class="text-muted d-block">{{ u.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Role -->
+                        <td>
+                            <span class="badge text-bg-light border text-muted">
+                                {{ u.role.value|title }}
+                            </span>
+                        </td>
+
+                        <!-- Verified status -->
+                        <td>
+                            {% if u.is_verified %}
+                            <span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>
+                            {% else %}
+                            <span class="text-warning"><i class="fa-solid fa-circle-minus me-1"></i>Unverified</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Active status -->
+                        <td>
+                            {% if u.is_active %}
+                            <span class="badge text-bg-success-subtle text-success border border-success-subtle">Active / Enabled</span>
+                            {% else %}
+                            <span class="badge text-bg-danger-subtle text-danger border border-danger-subtle">Deactivated / Locked</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Created date -->
+                        <td>
+                            {{ u.created_at.strftime('%d %b %Y') if u.created_at else 'N/A' }}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                <!-- Preview User Profile (Requirement #3) -->
+                                <a href="{{ url_for('admin.view_user', user_id=u.id) }}" class="btn btn-outline-info btn-sm" title="Preview Profile"><i class="fa-solid fa-eye"></i></a>
+                                
+                                <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="btn btn-outline-warning btn-sm" title="Edit Profile"><i class="fa-solid fa-user-pen"></i></a>
+                                
+                                <a href="{{ url_for('admin.reset_password', user_id=u.id) }}" class="btn btn-outline-primary btn-sm" title="Reset Password"><i class="fa-solid fa-key"></i></a>
+                                
+                                <!-- Locking toggles (Requirement #2) -->
+                                {% if u.is_active %}
+                                <form method="POST" action="{{ url_for('admin.toggle_user_status', user_id=u.id, action='lock') }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Lock Account"><i class="fa-solid fa-lock"></i></button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('admin.toggle_user_status', user_id=u.id, action='unlock') }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-success btn-sm" title="Unlock Account"><i class="fa-solid fa-lock-open"></i></button>
+                                </form>
+                                {% endif %}
+
+                                <!-- Soft deletion button (Requirement #1) -->
+                                {% if u.id != current_user.id %}
+                                <form method="POST" action="{{ url_for('admin.delete_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Soft deleting this user will disable their login access while fully preserving all their application, offer, and interview records. Proceed?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Soft Delete"><i class="fa-solid fa-trash-can"></i></button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No users matching search filters.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

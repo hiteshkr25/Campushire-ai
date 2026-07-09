@@ -1,0 +1,328 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ company.name }} — Company Profile{% endblock %}
+{% block portal_heading %}{{ company.name }}{% endblock %}
+{% block portal_subheading %}Your company's profile, recruitment history, and team members on CampusHire AI.{% endblock %}
+{% block breadcrumb_current %}Company{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4">
+
+    <!-- ── Left column: identity, contact, team ───────────────────────────── -->
+    <div class="col-lg-4">
+
+        <!-- Logo + identity card -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-center">
+            <div class="card-body">
+                {% set logo_url = get_company_logo_url(company.id) %}
+                <div class="mx-auto mb-3 d-flex align-items-center justify-content-center border rounded-3 p-2 bg-white"
+                     style="width:140px;height:140px;">
+                    {% if logo_url %}
+                        <img src="{{ logo_url }}" alt="{{ company.name }} logo"
+                             class="w-100 h-100 object-fit-contain">
+                    {% else %}
+                        <span class="display-6 fw-bold text-primary">{{ company.name[:2]|upper }}</span>
+                    {% endif %}
+                </div>
+                <h2 class="h4 mb-1">{{ company.name }}</h2>
+                <p class="text-muted small mb-2">{{ company.industry or 'Industry not specified' }}</p>
+
+                {% if company.website %}
+                <a href="{{ company.website }}" target="_blank" rel="noopener"
+                   class="btn btn-outline-primary btn-sm mt-1">
+                    <i class="fa-solid fa-globe me-1"></i>Visit Website
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Profile details -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2">
+                    <i class="fa-solid fa-circle-info me-2 text-primary"></i>Company Details
+                </h3>
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted">Legal Name</dt>
+                    <dd class="col-7 fw-semibold">{{ company.legal_name or company.name }}</dd>
+
+                    <dt class="col-5 text-muted">Industry</dt>
+                    <dd class="col-7">{{ company.industry or '—' }}</dd>
+
+                    <dt class="col-5 text-muted">Company Size</dt>
+                    <dd class="col-7">{{ company.company_size or '—' }}</dd>
+
+                    <dt class="col-5 text-muted">Headquarters</dt>
+                    <dd class="col-7">
+                        {{ company.hq_city or '' }}{% if company.hq_city and company.hq_country %}, {% endif %}{{ company.hq_country or '—' }}
+                    </dd>
+
+                    <dt class="col-5 text-muted">Status</dt>
+                    <dd class="col-7">
+                        {% if company.is_active %}
+                        <span class="badge text-bg-success-subtle text-success">
+                            <i class="fa-solid fa-circle-check me-1"></i>Active
+                        </span>
+                        {% else %}
+                        <span class="badge text-bg-secondary-subtle text-secondary">Inactive</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-5 text-muted">Verification</dt>
+                    <dd class="col-7">
+                        {% set vs = company.verification_status.value %}
+                        {% if vs == 'approved' %}
+                            <span class="badge text-bg-success-subtle text-success">Approved</span>
+                        {% elif vs == 'pending' %}
+                            <span class="badge text-bg-warning-subtle text-warning">Pending</span>
+                        {% else %}
+                            <span class="badge text-bg-danger-subtle text-danger">{{ vs|title }}</span>
+                        {% endif %}
+                    </dd>
+
+                    {% if company.contact_email %}
+                    <dt class="col-5 text-muted">Contact Email</dt>
+                    <dd class="col-7">
+                        <a href="mailto:{{ company.contact_email }}" class="text-decoration-none text-primary small">
+                            {{ company.contact_email }}
+                        </a>
+                    </dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- About / description -->
+        {% if company.description %}
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2">
+                    <i class="fa-solid fa-quote-left me-2 text-primary"></i>About
+                </h3>
+                <p class="small mb-0 lh-lg" style="white-space:pre-line;">{{ company.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recruiter team -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2">
+                    <i class="fa-solid fa-people-group me-2 text-info"></i>Recruiter Team
+                    <span class="badge text-bg-info-subtle text-info ms-1">{{ team|length }}</span>
+                </h3>
+                {% if team %}
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for member in team %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-2 d-flex align-items-center gap-2">
+                        <span class="user-avatar user-avatar-sm bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                              style="width:32px;height:32px;border-radius:50%;font-size:.8rem;flex-shrink:0;">
+                            {{ member.first_name[:1]|upper }}
+                        </span>
+                        <div class="small lh-sm">
+                            <strong class="d-block">{{ member.full_name }}</strong>
+                            <span class="text-muted">{{ member.designation or 'Recruiter' }}</span>
+                            {% if member.is_primary_contact %}
+                            <span class="badge text-bg-primary-subtle text-primary ms-1" style="font-size:.65rem;">Primary</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small mb-0">No active team members found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Right column: stats + history ──────────────────────────────────── -->
+    <div class="col-lg-8">
+
+        <!-- Stats cards row -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+                    <div class="card-body p-3">
+                        <div class="stat-card-top">
+                            <span class="metric-icon bg-primary-subtle text-primary">
+                                <i class="fa-solid fa-briefcase"></i>
+                            </span>
+                            <span class="badge text-bg-primary-subtle text-primary">Drives</span>
+                        </div>
+                        <small>Total Drives</small>
+                        <strong class="fs-3">{{ stats.total_drives }}</strong>
+                        <em>{{ stats.active_drives }} currently active</em>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+                    <div class="card-body p-3">
+                        <div class="stat-card-top">
+                            <span class="metric-icon bg-success-subtle text-success">
+                                <i class="fa-solid fa-user-graduate"></i>
+                            </span>
+                            <span class="badge text-bg-success-subtle text-success">Hires</span>
+                        </div>
+                        <small>Total Hires</small>
+                        <strong class="fs-3">{{ stats.total_hires }}</strong>
+                        <em>Students placed</em>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+                    <div class="card-body p-3">
+                        <div class="stat-card-top">
+                            <span class="metric-icon bg-warning-subtle text-warning">
+                                <i class="fa-solid fa-sack-dollar"></i>
+                            </span>
+                            <span class="badge text-bg-warning-subtle text-warning">LPA</span>
+                        </div>
+                        <small>Avg Package</small>
+                        <strong class="fs-3">{{ stats.average_package }} <span class="fs-6 text-muted">LPA</span></strong>
+                        <em>Average salary offered</em>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card bootstrap-stat-card glass-dashboard-card border-0 h-100">
+                    <div class="card-body p-3">
+                        <div class="stat-card-top">
+                            <span class="metric-icon bg-info-subtle text-info">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </span>
+                            <span class="badge text-bg-info-subtle text-info">Date</span>
+                        </div>
+                        <small>Last Recruitment</small>
+                        <strong class="fs-6 mt-2 d-block">
+                            {{ stats.last_recruitment_date.strftime('%d %b %Y') if stats.last_recruitment_date else 'No drives yet' }}
+                        </strong>
+                        <em>Most recent drive date</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Placement drives table -->
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                    <h3 class="h6 mb-0">
+                        <i class="fa-solid fa-clock-rotate-left me-2 text-success"></i>Drives Conducted
+                    </h3>
+                    <a href="{{ url_for('recruiter.drives') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fa-solid fa-briefcase me-1"></i>View All Drives
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle small mb-0">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th>Drive Title</th>
+                                <th>Job Role</th>
+                                <th>Drive Date</th>
+                                <th>Status</th>
+                                <th>Applicants</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if history.drives %}
+                                {% for drive in history.drives %}
+                                {% set dv = drive.status.value %}
+                                {% if dv == 'published' %}{% set dt = 'success' %}
+                                {% elif dv == 'ongoing' %}{% set dt = 'primary' %}
+                                {% elif dv == 'registration_closed' %}{% set dt = 'warning' %}
+                                {% elif dv == 'completed' %}{% set dt = 'secondary' %}
+                                {% elif dv == 'cancelled' %}{% set dt = 'danger' %}
+                                {% else %}{% set dt = 'light' %}{% endif %}
+                                <tr>
+                                    <td><strong>{{ drive.title }}</strong></td>
+                                    <td><span class="badge text-bg-light border">{{ drive.job_role }}</span></td>
+                                    <td>{{ drive.drive_date.strftime('%d %b %Y') if drive.drive_date else '—' }}</td>
+                                    <td>
+                                        <span class="badge text-bg-{{ dt }}-subtle text-{{ dt }}">
+                                            {{ dv.replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ drive.applications.count() }}</td>
+                                    <td>
+                                        {% if drive.applications.count() > 0 %}
+                                        <a href="{{ url_for('recruiter.candidates', drive_id=drive.id) }}"
+                                           class="btn btn-outline-primary btn-sm py-0">
+                                            Candidates
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        No placement drives conducted yet.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Placed students table -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-3 border-bottom pb-2">
+                    <i class="fa-solid fa-award me-2 text-warning"></i>
+                    Placed Students
+                    <span class="badge text-bg-warning-subtle text-warning ms-1">{{ history.hires|length }}</span>
+                </h3>
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle small mb-0">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Branch</th>
+                                <th>Job Role</th>
+                                <th>Package</th>
+                                <th>Placement Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if history.hires %}
+                                {% for hire in history.hires %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="user-avatar user-avatar-sm bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                                                  style="width:28px;height:28px;border-radius:50%;font-size:.75rem;flex-shrink:0;">
+                                                {{ hire.student_name[:1]|upper }}
+                                            </span>
+                                            <strong>{{ hire.student_name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>{{ hire.branch_code }}</td>
+                                    <td><span class="badge text-bg-light border">{{ hire.job_role }}</span></td>
+                                    <td><strong class="text-success">{{ hire.package }} LPA</strong></td>
+                                    <td>{{ hire.date.strftime('%d %b %Y') if hire.date else '—' }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        No students placed yet.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /col-lg-8 -->
+</div>
+{% endblock %}

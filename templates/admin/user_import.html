@@ -1,0 +1,75 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Bulk Import Users - CampusHire AI{% endblock %}
+{% block portal_heading %}Bulk Import Users{% endblock %}
+{% block portal_subheading %}Upload a CSV file containing user details to bulk create accounts and profiles.{% endblock %}
+{% block breadcrumb_current %}Users / Bulk Import{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('admin.users_list') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Directory</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row justify-content-center text-start">
+    <div class="col-lg-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4">
+            <div class="card-body">
+                <form method="POST" action="" enctype="multipart/form-data" class="small">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold">Select CSV File to Import</label>
+                        {{ form.import_file(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="file") }}
+                        {% for error in form.import_file.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100 p-2"><i class="fa-solid fa-upload me-1"></i>Upload and Parse CSV</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Formatting Guidelines panel -->
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body small">
+                <h3 class="h6 border-bottom pb-2 mb-3 text-primary"><i class="fa-solid fa-circle-info me-2"></i>CSV File Layout Guidelines</h3>
+                <p>The parser expects the CSV file to contain a header row. Columns change depending on the roles:</p>
+                
+                <table class="table table-sm table-bordered text-primary-emphasis bg-light-subtle mb-3" style="font-size: 0.75rem;">
+                    <thead class="table-light text-muted">
+                        <tr>
+                            <th>Role Column</th>
+                            <th>Required Columns / Field Parameters</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>student</strong></td>
+                            <td>`email`, `role` (student), `password`, `first_name`, `last_name`, `phone`, `college_code` (e.g. IITB), `branch_code` (e.g. CSE), `enrollment_number`, `batch` (e.g. 2023-2027), `graduation_year`</td>
+                        </tr>
+                        <tr>
+                            <td><strong>recruiter</strong></td>
+                            <td>`email`, `role` (recruiter), `password`, `first_name`, `last_name`, `phone`, `company_name`, `designation`</td>
+                        </tr>
+                        <tr>
+                            <td><strong>tpo</strong></td>
+                            <td>`email`, `role` (tpo), `password`, `first_name`, `last_name`, `phone`, `college_code` (e.g. IITB), `designation`, `department`</td>
+                        </tr>
+                        <tr>
+                            <td><strong>admin</strong></td>
+                            <td>`email`, `role` (admin), `password`</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-info-subtle border p-3 rounded mb-0">
+                    <strong class="d-block mb-1"><i class="fa-solid fa-lightbulb me-1"></i>Sample Row Template:</strong>
+                    <code>email,role,password,first_name,last_name,phone,college_code,branch_code,enrollment_number,batch,graduation_year,company_name,designation,department</code><br>
+                    <code>john@student.edu,student,Pass123,John,Doe,9876543210,IITB,CSE,EN001,2023-2027,2027,,,</code>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

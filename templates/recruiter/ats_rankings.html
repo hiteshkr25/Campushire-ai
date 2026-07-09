@@ -1,0 +1,114 @@
+{% extends "portals/base_portal.html" %}
+{% from "components/ats_ring.html" import ats_ring %}
+
+{% block title %}Candidate ATS Rankings - CampusHire AI{% endblock %}
+{% block portal_heading %}Candidate ATS Rankings{% endblock %}
+{% block portal_subheading %}Applicants ranked by core ATS Match indices for campaign: {{ drive.title }}.{% endblock %}
+{% block breadcrumb_current %}Candidates / ATS Rankings{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('recruiter.candidates') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Roster</a>
+{% endblock %}
+
+{% block portal_content %}
+<!-- Campaign Overview -->
+<div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-start small">
+    <div class="card-body">
+        <h2 class="h6 mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-circle-info me-2"></i>Hiring Campaign Overview</h2>
+        <div class="row g-3">
+            <div class="col-sm-4">
+                <span class="text-muted d-block">Placement Drive</span>
+                <strong>{{ drive.title }}</strong>
+            </div>
+            <div class="col-sm-4">
+                <span class="text-muted d-block">Recruiting Role</span>
+                <strong>{{ drive.job_role }}</strong>
+            </div>
+            <div class="col-sm-4">
+                <span class="text-muted d-block">Total Applicants</span>
+                <strong>{{ rankings|length }} candidate{{ '' if rankings|length == 1 else 's' }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rankings Table -->
+<div class="card dashboard-panel glass-dashboard-card border-0 text-start small">
+    <div class="card-body">
+        <h2 class="h6 mb-3 border-bottom pb-2"><i class="fa-solid fa-ranking-star me-2 text-primary"></i>ATS Score Rankings</h2>
+        
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th style="width: 60px;" class="text-center">Rank</th>
+                        <th>Candidate</th>
+                        <th>Academic Record</th>
+                        <th>Required Skills Missing</th>
+                        <th>Similarity Match</th>
+                        <th>ATS Score</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in rankings %}
+                    {% set student = item.student %}
+                    {% set app = item.application %}
+                    <tr>
+                        <!-- Rank -->
+                        <td class="text-center">
+                            <strong class="fs-6 text-primary-emphasis">#{{ loop.index }}</strong>
+                        </td>
+
+                        <!-- Candidate info -->
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="user-avatar user-avatar-sm bg-primary text-white fs-6 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; border-radius: 50%;">{{ student.first_name[:1]|upper }}</span>
+                                <div>
+                                    <strong class="d-block">{{ student.full_name }}</strong>
+                                    <small class="text-muted d-block">{{ student.user.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Academics -->
+                        <td>
+                            <strong>{{ student.branch.code if student.branch else 'N/A' }}</strong>
+                            <small class="text-muted d-block">{{ student.cgpa }} CGPA | {{ student.backlogs_count }} backlogs</small>
+                        </td>
+
+                        <!-- Missing skills count -->
+                        <td>
+                            {% if item.missing_skills %}
+                            <span class="badge text-bg-warning-subtle text-warning border" title="{{ item.missing_skills|join(', ') }}">{{ item.missing_skills|length }} missing</span>
+                            {% else %}
+                            <span class="badge text-bg-success-subtle text-success border"><i class="fa-solid fa-circle-check me-1"></i>0 missing</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Text similarity -->
+                        <td>
+                            <strong>{{ item.breakdown.similarity }}%</strong>
+                        </td>
+
+                        <!-- Match score ring -->
+                        <td>
+                            {{ ats_ring(score=item.ats_score, size="mini") }}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="text-end">
+                            <a href="{{ url_for('recruiter.view_candidate', application_id=app.id) }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-eye me-1"></i>Profile details</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No candidate applications registered for this campaign yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}{{ title }} - CampusHire AI{% endblock %}
+{% block portal_heading %}{{ title }}{% endblock %}
+{% block portal_subheading %}Release official job offers package and letter PDF to selected candidates.{% endblock %}
+{% block breadcrumb_current %}Offers / Release{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('recruiter.offers_dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Dashboard</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-6">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <form method="POST" action="" enctype="multipart/form-final-data" class="small">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Selected Candidate Profile</label>
+                        {{ form.application_id(class="form-select form-select-sm bg-transparent text-primary-emphasis") }}
+                        {% for error in form.application_id.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Salary Package Compensation (CTC in LPA)</label>
+                        {{ form.package_offered_lpa(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="number", step="0.1", placeholder="e.g. 12.5") }}
+                        {% for error in form.package_offered_lpa.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Job Location</label>
+                        {{ form.job_location(class="form-control form-control-sm bg-transparent text-primary-emphasis", placeholder="e.g. Bangalore / Remote") }}
+                        {% for error in form.job_location.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label text-muted fw-bold">Joining Date</label>
+                            {{ form.joining_date(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="date") }}
+                            {% for error in form.joining_date.errors %}
+                            <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label text-muted fw-bold">Offer Expiry Date & Time</label>
+                            {{ form.expires_at(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="datetime-local") }}
+                            {% for error in form.expires_at.errors %}
+                            <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold">Offer Letter Document (PDF only)</label>
+                        {{ form.offer_letter(class="form-control form-control-sm bg-transparent text-primary-emphasis", type="file") }}
+                        {% for error in form.offer_letter.errors %}
+                        <div class="text-danger mt-1 fs-8">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100 p-2"><i class="fa-solid fa-paper-plane me-1"></i>Release Offer Package</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

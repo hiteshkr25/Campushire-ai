@@ -1,0 +1,177 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Candidate Progress Tracking - CampusHire AI{% endblock %}
+{% block portal_heading %}Candidate Progress Tracking{% endblock %}
+{% block portal_subheading %}Review candidate progression milestones, round results, and evaluation timeline for {{ student.full_name }}.{% endblock %}
+{% block breadcrumb_current %}Interviews / Timeline{% endblock %}
+
+{% block portal_actions %}
+<a href="{{ url_for('recruiter.interviews') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Interviews</a>
+{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4">
+    <!-- Candidate card overview -->
+    <div class="col-lg-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-center">
+            <div class="card-body py-4">
+                <span class="user-avatar user-avatar-lg bg-primary text-white fs-4 d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 70px; height: 70px;">{{ student.first_name[:1]|upper }}</span>
+                <h2 class="h5 mb-1 text-primary-emphasis">{{ student.full_name }}</h2>
+                <small class="text-muted d-block mb-3">{{ student.user.email }}</small>
+                
+                <hr>
+
+                <div class="row g-2 text-start small">
+                    <div class="col-6">
+                        <span class="text-muted d-block">Academic Branch</span>
+                        <strong>{{ student.branch.code if student.branch else 'N/A' }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">CGPA Standing</span>
+                        <strong class="text-success">{{ student.cgpa or 'N/A' }} CGPA</strong>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <span class="text-muted d-block">Backlogs Count</span>
+                        <strong>{{ student.backlogs_count }} backlogs</strong>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <span class="text-muted d-block">Campaign Drive</span>
+                        <strong class="text-truncate d-block" style="max-width: 120px;" title="{{ application.drive.title }}">{{ application.drive.title }}</strong>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-2 text-start">
+                    <span class="text-muted small d-block">Application Status:</span>
+                    {% set badge_type = 'secondary' %}
+                    {% if application.status.value == 'placed' or application.status.value == 'selected' %}{% set badge_type = 'success' %}
+                    {% elif application.status.value == 'shortlisted' or application.status.value == 'interview_in_progress' %}{% set badge_type = 'warning' %}
+                    {% elif application.status.value == 'rejected' %}{% set badge_type = 'danger' %}
+                    {% endif %}
+                    <span class="badge text-bg-{{ badge_type }}-subtle text-{{ badge_type }} mt-1">
+                        {{ application.status.value|replace('_', ' ')|title }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Candidate vertical interview timeline -->
+    <div class="col-lg-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <h3 class="h6 mb-4 border-bottom pb-2"><i class="fa-solid fa-timeline me-2 text-primary"></i>Interview Workflow Pipeline</h3>
+                
+                <div class="vertical-timeline position-relative ps-4 text-start">
+                    <!-- Vertical joining timeline line -->
+                    <div class="timeline-line position-absolute start-0 top-0 bottom-0 border-start border-2 border-primary-subtle opacity-50" style="margin-left: 7px; top: 12px; bottom: 12px;"></div>
+
+                    {% for step in timeline %}
+                    {% set round = step.round %}
+                    {% set res = step.result %}
+                    {% set sched = step.schedule %}
+                    
+                    <!-- Color scheme calculations -->
+                    {% set step_color = 'secondary' %}
+                    {% set step_icon = 'fa-solid fa-circle-question' %}
+                    {% set step_label = 'Not Initiated' %}
+                    
+                    {% if res %}
+                        {% if res.result_status.value == 'passed' %}
+                            {% set step_color = 'success' %}
+                            {% set step_icon = 'fa-solid fa-circle-check' %}
+                            {% set step_label = 'Passed' %}
+                        {% elif res.result_status.value == 'failed' %}
+                            {% set step_color = 'danger' %}
+                            {% set step_icon = 'fa-solid fa-circle-xmark' %}
+                            {% set step_label = 'Failed' %}
+                        {% elif res.result_status.value == 'on_hold' %}
+                            {% set step_color = 'warning' %}
+                            {% set step_icon = 'fa-solid fa-circle-pause' %}
+                            {% set step_label = 'On Hold' %}
+                        {% elif res.result_status.value == 'absent' %}
+                            {% set step_color = 'secondary' %}
+                            {% set step_icon = 'fa-solid fa-circle-minus' %}
+                            {% set step_label = 'Absent' %}
+                        {% elif res.result_status.value == 'scheduled' %}
+                            {% set step_color = 'primary' %}
+                            {% set step_icon = 'fa-solid fa-calendar' %}
+                            {% set step_label = 'Scheduled' %}
+                        {% elif res.result_status.value == 'disqualified' %}
+                            {% set step_color = 'danger' %}
+                            {% set step_icon = 'fa-solid fa-ban' %}
+                            {% set step_label = 'Disqualified' %}
+                        {% endif %}
+                    {% elif sched %}
+                        {% set step_color = 'warning' %}
+                        {% set step_icon = 'fa-solid fa-calendar' %}
+                        {% set step_label = 'Scheduled' %}
+                    {% endif %}
+
+                    <div class="timeline-item position-relative mb-4">
+                        <!-- Dot node representing step -->
+                        <span class="timeline-dot-icon position-absolute rounded-circle bg-body border d-flex align-items-center justify-content-center text-{{ step_color }}" style="width: 24px; height: 24px; left: -29px; top: 0; z-index: 2;">
+                            <i class="{{ step_icon }}"></i>
+                        </span>
+
+                        <div class="timeline-content p-3 border rounded bg-light-subtle">
+                            <div class="d-flex align-items-start justify-content-between mb-2">
+                                <div>
+                                    <strong class="d-block text-primary-emphasis">Round {{ round.round_number }}: {{ round.round_name }}</strong>
+                                    <small class="text-muted d-block">{{ round.round_type.value|title }} round</small>
+                                </div>
+                                <span class="badge text-bg-{{ step_color }}-subtle text-{{ step_color }}">
+                                    {{ step_label }}
+                                </span>
+                            </div>
+
+                            <!-- Scheduled details if scheduled -->
+                            {% if sched and not (res and res.result_status.value in ('passed', 'failed', 'on_hold', 'absent')) %}
+                            <div class="alert alert-info-subtle border p-2 rounded mb-2 small d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="d-block text-primary-emphasis fw-bold"><i class="fa-solid fa-calendar-day me-1"></i>Scheduled for:</span>
+                                    <small class="text-muted">{{ sched.scheduled_start.strftime('%d %b %Y, %I:%M %p') }}</small>
+                                </div>
+                                {% if sched.meeting_link %}
+                                <a href="{{ sched.meeting_link }}" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-video me-1"></i>Join</a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Evaluated scores details if evaluated -->
+                            {% if res and res.result_status.value in ('passed', 'failed', 'on_hold', 'absent') %}
+                            <div class="evaluation-results-box small mt-2">
+                                <div class="row g-2 border-top pt-2 mt-2">
+                                    <div class="col-6">
+                                        <span class="text-muted d-block">Awarded Score:</span>
+                                        <strong>
+                                            {% if res.score is not none %}
+                                            {{ res.score }} / {{ res.max_score }}
+                                            {% else %}
+                                            N/A
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span class="text-muted d-block">Evaluated Date:</span>
+                                        <strong>{{ res.evaluated_at.strftime('%d %b %Y') if res.evaluated_at else 'N/A' }}</strong>
+                                    </div>
+                                </div>
+                                {% if res.remarks %}
+                                <div class="p-2 border rounded bg-body mt-2">
+                                    <span class="text-muted d-block fs-8">Remarks / Feedback:</span>
+                                    <p class="mb-0 text-primary-emphasis italic fs-7" style="line-height: 1.3;">"{{ res.remarks }}"</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
