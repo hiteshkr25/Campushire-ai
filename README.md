@@ -125,39 +125,41 @@ Unlike traditional placement portals, CampusHire AI incorporates resume intellig
 
 ## Student Dashboard
 
-![Student Dashboard](docs/screenshots/student-dashboard.png)
+![Student Dashboard](docs/images/student-dashboard.png)
 
 ---
 
 ## Recruiter Dashboard
 
-![Recruiter Dashboard](docs/screenshots/recruiter-dashboard.png)
+![Recruiter Dashboard](docs/images/recruiter-dashboard.png)
 
 ---
 
 ## TPO Dashboard
 
-![TPO Dashboard](docs/screenshots/tpo-dashboard.png)
+![TPO Dashboard](docs/images/tpo-dashboard.png)
 
 ---
 
 ## Admin Dashboard
 
-![Admin Dashboard](docs/screenshots/admin-dashboard.png)
-
----
-
-## Analytics Dashboard
-
-![Analytics](docs/screenshots/analytics.png)
+![Admin Dashboard](docs/images/admin-dashboard.png)
 
 ---
 
 ## Resume ATS Analysis
 
-![ATS](docs/screenshots/resume-ats.png)
+![ATS](docs/images/ats-analysis.png)
 
 ---
+
+
+## Dark Mode
+
+![DARK](docs/images/dark-mode.png)
+
+---
+
 
 # 🏗 System Architecture
 
