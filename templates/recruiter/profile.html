@@ -1,0 +1,130 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Recruiter Profile - CampusHire AI{% endblock %}
+{% block portal_heading %}Profile Management{% endblock %}
+{% block portal_subheading %}Manage your recruiter identity, personal details, and company representation statistics.{% endblock %}
+{% block breadcrumb_current %}Profile{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4">
+    <div class="col-xl-8">
+        <form method="POST" novalidate class="card dashboard-panel glass-dashboard-card border-0 profile-form-card">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="card-body">
+                <div class="panel-header mb-4">
+                    <div>
+                        <h2>Recruiter Profile</h2>
+                        <p>Update your personal information and contact details.</p>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Profile</button>
+                </div>
+
+                <section class="profile-section mb-4">
+                    <h3 class="h5 border-bottom pb-2 mb-3">Personal Information</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">First Name</label>
+                            <input type="text" class="form-control" value="{{ recruiter.first_name }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Last Name</label>
+                            <input type="text" class="form-control" value="{{ recruiter.last_name }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">User ID / Email</label>
+                            <input type="text" class="form-control" value="{{ recruiter.user.email }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Designation</label>
+                            <input type="text" name="designation" class="form-control" value="{{ recruiter.designation or '' }}">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="profile-section mb-4">
+                    <h3 class="h5 border-bottom pb-2 mb-3">Organization Information</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Company Name</label>
+                            <input type="text" class="form-control" value="{{ company.name }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Website</label>
+                            <input type="text" class="form-control" value="{{ company.website or 'N/A' }}" disabled>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label text-muted">Contact Email</label>
+                            <input type="text" class="form-control" value="{{ company.contact_email or 'N/A' }}" disabled>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="profile-section">
+                    <h3 class="h5 border-bottom pb-2 mb-3">Contact & Account Details</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Phone Number</label>
+                            <input type="text" name="phone" class="form-control" value="{{ recruiter.phone or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">System Role</label>
+                            <input type="text" class="form-control" value="Company Recruiter" disabled>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-center py-4">
+            <div class="card-body">
+                <div class="profile-completion-ring mx-auto mb-3 d-flex align-items-center justify-content-center bg-primary text-white rounded-circle fs-2 fw-bold" style="width: 80px; height: 80px;">
+                    {{ (recruiter.first_name[:1] + recruiter.last_name[:1])|upper }}
+                </div>
+                <h4 class="h5 mb-1">{{ recruiter.first_name }} {{ recruiter.last_name }}</h4>
+                <p class="text-muted small mb-0">{{ recruiter.designation or 'Company Recruiter' }}</p>
+                <span class="badge bg-success-subtle text-success border border-success-subtle mt-2">Verified Recruiter</span>
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header mb-3">
+                    <h2>Quick Statistics</h2>
+                </div>
+                <div class="profile-list d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-briefcase text-primary fs-5"></i>
+                            <span>Total Drives Conducted</span>
+                        </div>
+                        <strong class="text-primary fs-5">{{ stats.total_drives }}</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-signal text-success fs-5"></i>
+                            <span>Active Hiring Drives</span>
+                        </div>
+                        <strong class="text-success fs-5">{{ stats.active_drives }}</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-users text-info fs-5"></i>
+                            <span>Total Candidates Applied</span>
+                        </div>
+                        <strong class="text-info fs-5">{{ stats.total_applications }}</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-user-check text-warning fs-5"></i>
+                            <span>Candidates Placed</span>
+                        </div>
+                        <strong class="text-warning fs-5">{{ stats.placed_count }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

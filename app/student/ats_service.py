@@ -16,15 +16,29 @@ class AtsService:
     ]
 
     @classmethod
-    def _primary_or_latest_resume(cls, student):
+    def _primary_or_latest_resume(cls, student, resumes=None):
+        if resumes is not None:
+            # Filter in Python memory to avoid SQL query
+            prim = next((r for r in resumes if r.is_primary), None)
+            if prim:
+                return prim
+            # Sort by uploaded_at desc or created_at desc
+            sorted_resumes = sorted(
+                resumes,
+                key=lambda r: (r.uploaded_at or r.created_at or datetime.min, r.created_at or datetime.min),
+                reverse=True
+            )
+            return sorted_resumes[0] if sorted_resumes else None
+
         resume = Resume.query.filter_by(student_id=student.id, is_primary=True).first()
         if not resume:
             resume = student.resumes.order_by(Resume.uploaded_at.desc(), Resume.created_at.desc()).first()
         return resume
 
     @classmethod
-    def calculate_dashboard_score(cls, student):
-        resume = cls._primary_or_latest_resume(student)
+    def calculate_dashboard_score(cls, student, resume=None):
+        if not resume:
+            resume = cls._primary_or_latest_resume(student)
 
         if not resume:
             return {
@@ -91,8 +105,9 @@ class AtsService:
         }
 
     @classmethod
-    def build_dashboard_checklist(cls, student, profile_completion):
-        resume = cls._primary_or_latest_resume(student)
+    def build_dashboard_checklist(cls, student, profile_completion, resume=None, checklist_data=None):
+        if not resume:
+            resume = cls._primary_or_latest_resume(student)
         has_resume = resume is not None
         has_parsed = (
             has_resume and
@@ -110,17 +125,24 @@ class AtsService:
         if not education_found:
             education_found = bool(student.cgpa is not None and student.graduation_year)
 
+        if checklist_data:
+            has_skills = checklist_data.get("skills", False)
+            has_projects = checklist_data.get("projects", False)
+        else:
+            has_skills = student.skills.count() > 0
+            has_projects = student.projects.count() > 0
+
         return [
             {"label": "Resume Uploaded", "done": has_resume},
             {"label": "Resume Parsed", "done": has_parsed},
-            {"label": "Skills Added", "done": student.skills.count() > 0},
-            {"label": "Projects Added", "done": student.projects.count() > 0},
+            {"label": "Skills Added", "done": has_skills},
+            {"label": "Projects Added", "done": has_projects},
             {"label": "Education Added", "done": education_found},
             {"label": "Profile Completed", "done": profile_completion >= 40},
         ]
 
     @classmethod
-    def calculate_ats_score(cls, student, drive, resume=None):
+    def calculate_ats_score(cls, student, drive, resume=None, drive_rules=None, student_skills=None, **kwargs):
         if not resume:
             resume = cls._primary_or_latest_resume(student)
         if not resume or not resume.parsed_text:
@@ -144,20 +166,26 @@ class AtsService:
                 "match_confidence": "Low"
             }
 
-        try:
-            parsed_envelope = json.loads(resume.parsed_text)
+        parsed_envelope = kwargs.get("parsed_envelope")
+        if parsed_envelope is not None:
             structured_data = parsed_envelope.get("structured_data", {})
             raw_resume_text = parsed_envelope.get("raw_text", "")
-        except Exception:
-            structured_data = {}
-            raw_resume_text = ""
+        else:
+            try:
+                parsed_envelope = json.loads(resume.parsed_text)
+                structured_data = parsed_envelope.get("structured_data", {})
+                raw_resume_text = parsed_envelope.get("raw_text", "")
+            except Exception:
+                structured_data = {}
+                raw_resume_text = ""
 
         resume_skills = [s.lower().strip() for s in structured_data.get("skills", [])]
         projects_count = len(structured_data.get("projects", []))
         certs_count = len(structured_data.get("certifications", []))
         exp_count = len(structured_data.get("experience", []))
 
-        drive_rules = drive.eligibility_rules.all()
+        if drive_rules is None:
+            drive_rules = drive.eligibility_rules.all()
         required_skills = []
         min_cgpa_val = 0.0
 

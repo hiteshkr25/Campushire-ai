@@ -14,6 +14,70 @@
 {% set is_verified = student.profile_status.value == 'verified' %}
 <div class="row g-4">
     <div class="col-xl-8">
+        {% if student.profile_status.value == 'rejected' %}
+        <div class="card border-0 shadow-sm mb-4 border-start border-danger border-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="fs-3 text-danger"><i class="fa-solid fa-circle-xmark"></i></span>
+                    <div>
+                        <h4 class="h6 mb-0 fw-bold text-danger">Profile Verification Rejected</h4>
+                        <small class="text-muted">Verification workflow reverted to Rejected</small>
+                    </div>
+                </div>
+                
+                <table class="table table-sm table-borderless mb-3 small text-muted">
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold" style="width: 120px;">Status:</td>
+                            <td><span class="badge bg-danger">Rejected</span></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Rejected By:</td>
+                            <td>{{ student.verifier_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Rejected On:</td>
+                            <td>{{ student.verified_at.strftime('%d %b %Y, %I:%M %p') if student.verified_at else '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Reason:</td>
+                            <td class="text-dark fw-semibold" style="white-space: pre-line;">{{ student.rejection_reason or 'No reason provided.' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Rejections:</td>
+                            <td class="text-dark fw-semibold">{{ student.rejection_count or 0 }} / 3</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                {% if (student.rejection_count or 0) >= 3 %}
+                <div class="alert alert-danger border-0 d-flex align-items-center mb-0" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-3 fs-5"></i>
+                    <div>
+                        <strong>Rejection Limit Exceeded:</strong> Your profile has been rejected 3 times. You can no longer resubmit for verification. Please contact the Training & Placement Office.
+                    </div>
+                </div>
+                {% else %}
+                <form action="{{ url_for('student.resubmit_profile') }}" method="POST" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fa-solid fa-cloud-arrow-up me-1"></i>Update Profile & Resubmit
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if student.profile_status.value == 'pending_verification' %}
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+            <i class="fa-solid fa-clock-rotate-left me-3 fs-4 text-warning"></i>
+            <div>
+                <strong>Verification in Progress:</strong> Your profile has been submitted for TPO verification.
+            </div>
+        </div>
+        {% endif %}
+
         {% if is_verified %}
         <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
             <i class="fa-solid fa-circle-info me-3 fs-4 text-info"></i>

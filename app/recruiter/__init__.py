@@ -774,3 +774,62 @@ def drive_ats_rankings(drive_id):
         drive=drive,
         rankings=rankings
     )
+
+
+@recruiter_bp.route("/profile", methods=["GET", "POST"])
+@role_required(UserRole.RECRUITER)
+def profile():
+    recruiter = current_user.recruiter_profile
+    if not recruiter:
+        abort(404)
+    if not recruiter.is_active:
+        abort(403)
+
+    company = recruiter.company
+
+    if request.method == "POST":
+        phone = request.form.get("phone", "").strip()
+        designation = request.form.get("designation", "").strip()
+        try:
+            recruiter.phone = phone if phone else None
+            recruiter.designation = designation if designation else None
+            db.session.commit()
+            flash("Profile updated successfully.", "success")
+            return redirect(url_for("recruiter.profile"))
+        except Exception:
+            db.session.rollback()
+            flash("Unable to update profile. Please try again.", "danger")
+
+    # Dynamic Stats
+    from app.models.drive import PlacementDrive
+    from app.models.application import Application
+    from app.models.enums import DriveStatus, ApplicationStatus
+    
+    total_drives = PlacementDrive.query.filter_by(company_id=company.id).count()
+    active_drives = PlacementDrive.query.filter(
+        PlacementDrive.company_id == company.id,
+        PlacementDrive.status.in_([DriveStatus.PUBLISHED, DriveStatus.ONGOING])
+    ).count()
+
+    total_applications = Application.query.join(PlacementDrive).filter(
+        PlacementDrive.company_id == company.id
+    ).count()
+
+    placed_count = Application.query.join(PlacementDrive).filter(
+        PlacementDrive.company_id == company.id,
+        Application.status == ApplicationStatus.PLACED
+    ).count()
+
+    stats = {
+        "total_drives": total_drives,
+        "active_drives": active_drives,
+        "total_applications": total_applications,
+        "placed_count": placed_count
+    }
+
+    return render_template(
+        "recruiter/profile.html",
+        recruiter=recruiter,
+        company=company,
+        stats=stats
+    )

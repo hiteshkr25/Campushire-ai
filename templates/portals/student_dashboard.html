@@ -151,26 +151,27 @@
                 <div class="panel-card-header">
                     <div>
                         <h2>Placement timeline</h2>
-                        <p>Upcoming milestones in your placement journey.</p>
+                        <p>Real-time milestones in your placement journey.</p>
                     </div>
                 </div>
-                <ol class="placement-timeline">
-                    <li class="complete">
-                        <span></span>
-                        <div><strong>Profile verified</strong><small>Completed by TPO</small></div>
-                    </li>
-                    <li class="active">
-                        <span></span>
-                        <div><strong>Nexora technical round</strong><small>Tomorrow, 10:30 AM</small></div>
-                    </li>
-                    <li>
-                        <span></span>
-                        <div><strong>QuantaVerse assignment</strong><small>Due Friday</small></div>
-                    </li>
-                    <li>
-                        <span></span>
-                        <div><strong>Offer decision window</strong><small>Expected next week</small></div>
-                    </li>
+                <ol class="placement-timeline" style="max-height: 320px; overflow-y: auto; list-style: none; padding-left: 0;">
+                    {% if events %}
+                        {% for event in events %}
+                        <li class="{{ 'active' if loop.first else 'complete' }}">
+                            <span></span>
+                            <div>
+                                <strong>{{ event.title }}</strong>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">{{ event.time.strftime('%d %b %Y, %I:%M %p') }}</small>
+                                <small class="d-block mt-1">{{ event.description }}</small>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="complete">
+                            <span></span>
+                            <div><strong>No milestones reached yet</strong><small>Timeline updates as placement progress occurs.</small></div>
+                        </li>
+                    {% endif %}
                 </ol>
             </div>
         </section>
@@ -184,21 +185,31 @@
                         <h2>Notifications</h2>
                         <p>Latest drive and TPO updates.</p>
                     </div>
-                    <span class="status-pill status-pill-danger">4 new</span>
+                    {% if unread_notifications_count > 0 %}
+                    <span class="status-pill status-pill-danger">{{ unread_notifications_count }} unread</span>
+                    {% endif %}
                 </div>
-                <div class="student-notification-list">
-                    <div class="student-notification unread">
-                        <i class="fa-solid fa-calendar-day"></i>
-                        <div><strong>Interview scheduled</strong><small>Nexora Labs technical round tomorrow.</small></div>
-                    </div>
-                    <div class="student-notification unread">
-                        <i class="fa-solid fa-file-circle-check"></i>
-                        <div><strong>Application shortlisted</strong><small>QuantaVerse moved you to assignment stage.</small></div>
-                    </div>
-                    <div class="student-notification">
-                        <i class="fa-solid fa-bullhorn"></i>
-                        <div><strong>TPO announcement</strong><small>Pre-placement talk starts at 4:00 PM.</small></div>
-                    </div>
+                <div class="student-notification-list" style="max-height: 320px; overflow-y: auto;">
+                    {% if recent_db_notifications %}
+                        {% for notify in recent_db_notifications %}
+                        <div class="student-notification {{ 'unread' if not notify.is_read else '' }} mb-2">
+                            <a href="{{ url_for('main.click_notification', notification_id=notify.id) }}" class="text-decoration-none text-dark d-flex gap-2 w-100">
+                                <i class="{{ notify.icon_class }} mt-1"></i>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="d-block text-truncate" style="max-width: 180px;">{{ notify.title }}</strong>
+                                        <small class="text-muted" style="font-size: 0.65rem;">{{ notify.created_at.strftime('%H:%M') }}</small>
+                                    </div>
+                                    <small class="text-muted d-block text-truncate" style="max-width: 220px;">{{ notify.message }}</small>
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-3 text-center text-muted small">
+                            No notifications available.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </section>

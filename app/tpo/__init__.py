@@ -345,6 +345,9 @@ def view_drive(drive_id):
     if not tpo_admin:
         abort(404)
 
+    drive_obj = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive_obj)
+
     stats = TpoService.get_drive_details_stats(drive_id)
     applicants = TpoService.get_drive_applicants(drive_id)
     rounds = TpoService.get_drive_rounds(drive_id)
@@ -383,7 +386,8 @@ def edit_drive(drive_id):
     if not tpo_admin:
         abort(404)
 
-    drive = PlacementDrive.query.filter_by(id=drive_id).first_or_404()
+    drive = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive)
     
     # Load rules summary
     stats = TpoService.get_drive_details_stats(drive_id)
@@ -449,6 +453,8 @@ def clone_drive(drive_id):
     tpo_admin = current_user.tpo_profile
     if not tpo_admin:
         abort(404)
+    drive_obj = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive_obj)
     try:
         cloned = TpoService.clone_placement_drive(drive_id, tpo_admin.id)
         flash(f"Placement drive cloned successfully as '{cloned.title}' in Draft status.", "success")
@@ -462,7 +468,8 @@ def clone_drive(drive_id):
 @tpo_bp.route("/drives/<uuid:drive_id>/delete", methods=["POST"])
 @role_required(UserRole.TPO)
 def delete_drive(drive_id):
-    drive = PlacementDrive.query.filter_by(id=drive_id).first_or_404()
+    drive = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive)
     title = drive.title
     try:
         db.session.delete(drive)
@@ -477,7 +484,8 @@ def delete_drive(drive_id):
 @tpo_bp.route("/drives/<uuid:drive_id>/status/<status>", methods=["POST"])
 @role_required(UserRole.TPO)
 def change_drive_status(drive_id, status):
-    drive = PlacementDrive.query.filter_by(id=drive_id).first_or_404()
+    drive = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive)
     try:
         new_status = DriveStatus(status)
         drive.status = new_status
@@ -494,6 +502,8 @@ def change_drive_status(drive_id, status):
 @tpo_bp.route("/drives/<uuid:drive_id>/rounds", methods=["POST"])
 @role_required(UserRole.TPO)
 def add_round(drive_id):
+    drive_obj = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive_obj)
     form = InterviewRoundForm()
     if form.validate_on_submit():
         try:
@@ -521,7 +531,8 @@ def add_round(drive_id):
 @tpo_bp.route("/drives/<uuid:drive_id>/rounds/<uuid:round_id>/edit", methods=["GET", "POST"])
 @role_required(UserRole.TPO)
 def edit_round(drive_id, round_id):
-    drive = PlacementDrive.query.filter_by(id=drive_id).first_or_404()
+    drive = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive)
     rnd = InterviewRound.query.filter_by(id=round_id, drive_id=drive_id).first_or_404()
     
     form = InterviewRoundForm(obj=rnd)
@@ -552,6 +563,8 @@ def edit_round(drive_id, round_id):
 @tpo_bp.route("/drives/<uuid:drive_id>/rounds/<uuid:round_id>/delete", methods=["POST"])
 @role_required(UserRole.TPO)
 def delete_round(drive_id, round_id):
+    drive_obj = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive_obj)
     try:
         TpoService.delete_interview_round(round_id)
         flash("Interview round removed.", "info")
@@ -604,7 +617,8 @@ def review_student(student_id):
     if not tpo_admin:
         abort(404)
         
-    student = Student.query.filter_by(id=student_id, college_id=tpo_admin.college_id).first_or_404()
+    student = Student.query.get_or_404(student_id)
+    TpoService.validate_college_access(student)
     
     resumes = student.resumes.order_by(Student.resumes.property.mapper.class_.is_primary.desc()).all()
     primary_resume = next((r for r in resumes if r.is_primary), None)
@@ -630,6 +644,8 @@ def approve_student(student_id):
     tpo_admin = current_user.tpo_profile
     if not tpo_admin:
         abort(404)
+    student = Student.query.get_or_404(student_id)
+    TpoService.validate_college_access(student)
     try:
         TpoService.verify_student(student_id, current_user.id)
         flash("Student profile has been verified and academic details locked.", "success")
@@ -645,6 +661,8 @@ def reject_student(student_id):
     tpo_admin = current_user.tpo_profile
     if not tpo_admin:
         abort(404)
+    student = Student.query.get_or_404(student_id)
+    TpoService.validate_college_access(student)
         
     remarks = request.form.get("remarks", "").strip()
     try:
@@ -694,6 +712,8 @@ def drive_eligibility(drive_id):
     if not tpo_admin:
         abort(404)
 
+    drive_obj = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive_obj)
     report = TpoService.get_drive_eligibility_report(drive_id, tpo_admin.college_id)
     
     return render_template(
@@ -712,6 +732,8 @@ def export_eligible_students(drive_id):
     if not tpo_admin:
         abort(404)
         
+    drive_obj = PlacementDrive.query.get_or_404(drive_id)
+    TpoService.validate_college_access(drive_obj)
     report = TpoService.get_drive_eligibility_report(drive_id, tpo_admin.college_id)
     drive = report["drive"]
     eligible_list = report["eligible"]
@@ -990,7 +1012,8 @@ def list_change_requests():
     sort_order = request.args.get("sort", "newest").strip()
     
     # Base query for requests from the same college
-    query = ProfileChangeRequest.query.join(Student).filter(Student.college_id == tpo_admin.college_id)
+    from sqlalchemy.orm import joinedload
+    query = ProfileChangeRequest.query.join(Student).options(joinedload(ProfileChangeRequest.student)).filter(Student.college_id == tpo_admin.college_id)
     
     if status_filter:
         query = query.filter(ProfileChangeRequest.status == status_filter)
@@ -1032,8 +1055,7 @@ def approve_change_request(request_id):
     from app.models.student import ProfileChangeRequest
     req = ProfileChangeRequest.query.get_or_404(request_id)
     
-    if req.student.college_id != tpo_admin.college_id:
-        abort(403)
+    TpoService.validate_college_access(req.student)
         
     if req.status != "pending":
         flash("This request has already been reviewed.", "warning")
@@ -1095,8 +1117,7 @@ def reject_change_request(request_id):
     from app.models.student import ProfileChangeRequest
     req = ProfileChangeRequest.query.get_or_404(request_id)
     
-    if req.student.college_id != tpo_admin.college_id:
-        abort(403)
+    TpoService.validate_college_access(req.student)
         
     if req.status != "pending":
         flash("This request has already been reviewed.", "warning")
@@ -1132,3 +1153,66 @@ def reject_change_request(request_id):
         flash(f"Error rejecting request: {str(exc)}", "danger")
         
     return redirect(url_for("tpo.list_change_requests"))
+
+
+@tpo_bp.route("/profile", methods=["GET", "POST"])
+@role_required(UserRole.TPO)
+def profile():
+    tpo_admin = current_user.tpo_profile
+    if not tpo_admin:
+        abort(404)
+
+    college = tpo_admin.college
+    from app.tpo.forms import TpoProfileForm
+    form = TpoProfileForm(obj=tpo_admin)
+
+    if form.validate_on_submit():
+        try:
+            tpo_admin.phone = form.phone.data.strip() if form.phone.data else None
+            tpo_admin.designation = form.designation.data.strip() if form.designation.data else None
+            tpo_admin.department = form.department.data.strip() if form.department.data else None
+            db.session.commit()
+            flash("Profile updated successfully.", "success")
+            return redirect(url_for("tpo.profile"))
+        except Exception:
+            db.session.rollback()
+            flash("Unable to update profile. Please try again.", "danger")
+
+    from app.models.student import Student
+    from app.models.company import Recruiter, Company
+    from app.models.drive import PlacementDrive
+    from app.models.enums import ProfileStatus, DriveStatus
+
+    students_managed = Student.query.filter_by(college_id=college.id).count()
+
+    recruiters_connected = Recruiter.query.join(Company).join(PlacementDrive).filter(
+        PlacementDrive.college_id == college.id
+    ).distinct(Recruiter.id).count()
+
+    active_drives = PlacementDrive.query.filter(
+        PlacementDrive.college_id == college.id,
+        PlacementDrive.status.in_([DriveStatus.PUBLISHED, DriveStatus.ONGOING])
+    ).count()
+
+    pending_verifications = Student.query.filter_by(
+        college_id=college.id,
+        profile_status=ProfileStatus.PENDING_VERIFICATION
+    ).count()
+
+    total_branches = college.branches.count()
+
+    stats = {
+        "students_managed": students_managed,
+        "recruiters_connected": recruiters_connected,
+        "active_drives": active_drives,
+        "pending_verifications": pending_verifications,
+        "total_branches": total_branches
+    }
+
+    return render_template(
+        "tpo/profile.html",
+        tpo_admin=tpo_admin,
+        college=college,
+        stats=stats,
+        form=form
+    )

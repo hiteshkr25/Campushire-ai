@@ -100,6 +100,7 @@ class AuthService:
             role=UserRole.STUDENT,
             is_active=True,
             is_verified=True,
+            college_id=college.id,
         )
         student = Student(
             user=user,

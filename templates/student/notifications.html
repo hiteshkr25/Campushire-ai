@@ -1,0 +1,115 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Notification History - CampusHire AI{% endblock %}
+{% block portal_heading %}Notifications{% endblock %}
+{% block portal_subheading %}Review system alerts, drive invitations, and TPO comments.{% endblock %}
+{% block breadcrumb_current %}Notifications{% endblock %}
+
+{% block portal_actions %}
+{% if unread_notifications_count > 0 %}
+<form action="{{ url_for('main.mark_all_read') }}" method="POST" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-outline-primary btn-sm">
+        <i class="fa-solid fa-check-double me-1"></i>Mark all as read
+    </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block portal_content %}
+{% if pagination.items %}
+<div class="row g-3">
+    <div class="col-12">
+        <div class="d-flex flex-column gap-3">
+            {% for notify in pagination.items %}
+            <div class="card glass-dashboard-card border-0 {{ 'border-start border-primary border-4' if not notify.is_read else '' }}">
+                <div class="card-body d-flex gap-3 align-items-start position-relative">
+                    <span class="fs-4 mt-1">
+                        <i class="{{ notify.icon_class }}"></i>
+                    </span>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h3 class="h6 mb-0 fw-bold">{{ notify.title }}</h3>
+                            <span class="text-muted small" style="font-size: 0.75rem;">
+                                {{ notify.created_at.strftime('%d %b %Y, %I:%M %p') }}
+                            </span>
+                        </div>
+                        <p class="mb-0 text-muted small" style="white-space: pre-line;">{{ notify.message }}</p>
+                        
+                        <div class="d-flex gap-3 align-items-center mt-2">
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem;">
+                                {{ notify.category }}
+                            </span>
+                            {% if notify.priority == 'high' %}
+                            <span class="badge bg-danger-subtle text-danger" style="font-size: 0.7rem;">
+                                High Priority
+                            </span>
+                            {% elif notify.priority == 'medium' %}
+                            <span class="badge bg-warning-subtle text-warning" style="font-size: 0.7rem;">
+                                Medium Priority
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        {% if notify.action_url %}
+                        <a href="{{ url_for('main.click_notification', notification_id=notify.id) }}" class="btn btn-sm btn-light">
+                            View Action
+                        </a>
+                        {% endif %}
+                        {% if not notify.is_read %}
+                        <form action="{{ url_for('main.mark_notification_read', notification_id=notify.id) }}" method="POST" class="m-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Mark as Read">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if pagination.pages > 1 %}
+    <div class="col-12 mt-4">
+        <nav aria-label="Notifications navigation">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('student.notifications_page', page=pagination.prev_num) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                    {% if page_num %}
+                        <li class="page-item {{ 'active' if page_num == pagination.page else '' }}">
+                            <a class="page-link" href="{{ url_for('student.notifications_page', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('student.notifications_page', page=pagination.next_num) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="card glass-dashboard-card border-0">
+    <div class="card-body text-center py-5">
+        <i class="fa-regular fa-bell fa-3x text-muted mb-3"></i>
+        <h2 class="h5">No notifications available.</h2>
+        <p class="text-muted">You are completely up to date.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

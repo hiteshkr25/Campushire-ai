@@ -49,7 +49,6 @@
             <a href="{{ url_for('student.applications') }}" class="sidebar-link{% if request.endpoint in ['student.applications', 'student.application_detail'] %} active{% endif %}"><i class="fa-solid fa-file-lines"></i><span>Applications</span></a>
             <a href="{{ url_for('student.resumes') }}" class="sidebar-link{% if request.endpoint in ['student.resumes', 'student.preview_resume'] %} active{% endif %}"><i class="fa-solid fa-folder-open"></i><span>Resumes</span></a>
             <a href="{{ url_for('student.ats_dashboard') }}" class="sidebar-link{% if request.endpoint in ['student.ats_dashboard', 'student.view_ats_details'] %} active{% endif %}"><i class="fa-solid fa-wand-magic-sparkles"></i><span>ATS Rank Match</span></a>
-            <a href="{{ url_for('student.profile') }}" class="sidebar-link{% if request.endpoint == 'student.profile' %} active{% endif %}"><i class="fa-solid fa-user-graduate"></i><span>Profile</span></a>
             {% elif role_value == 'recruiter' %}
             <a href="{{ url_for('recruiter.company_profile') }}" class="sidebar-link{% if request.endpoint == 'recruiter.company_profile' %} active{% endif %}"><i class="fa-solid fa-building"></i><span>Company</span></a>
             <a href="{{ url_for('recruiter.drives') }}" class="sidebar-link{% if request.endpoint == 'recruiter.drives' %} active{% endif %}"><i class="fa-solid fa-briefcase"></i><span>Hiring Drives</span></a>
@@ -100,27 +99,52 @@
                 <div class="dropdown">
                     <button class="btn icon-btn position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
                         <i class="fa-regular fa-bell"></i>
-                        <span class="notification-dot"></span>
+                        {% if unread_notifications_count > 0 %}
+                        <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
+                            {{ unread_notifications_count }}
+                        </span>
+                        {% endif %}
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end dashboard-dropdown notifications-menu">
-                        <div class="dropdown-header-text">
-                            <strong>Notifications</strong>
-                            <span>Latest workspace updates</span>
-                        </div>
-                        <div class="notification-item">
-                            <i class="fa-solid fa-circle-info text-primary"></i>
+                    <div class="dropdown-menu dropdown-menu-end dashboard-dropdown notifications-menu" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                        <div class="dropdown-header-text d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>Dashboard ready</strong>
-                                <span>Your {{ role_label|lower }} workspace is active.</span>
+                                <strong>Notifications</strong>
+                                <span style="font-size: 0.75rem;">Latest updates</span>
                             </div>
+                            {% if unread_notifications_count > 0 %}
+                            <form action="{{ url_for('main.mark_all_read') }}" method="POST" class="m-0">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-none" style="font-size: 0.75rem;">Mark all as read</button>
+                            </form>
+                            {% endif %}
                         </div>
-                        <div class="notification-item">
-                            <i class="fa-solid fa-shield-halved text-success"></i>
-                            <div>
-                                <strong>Secure session</strong>
-                                <span>Account access is protected.</span>
-                            </div>
+                        <div class="notifications-list">
+                            {% if recent_notifications %}
+                                {% for notify in recent_notifications %}
+                                <div class="notification-item {{ 'unread' if not notify.is_read else '' }} p-2 border-bottom" style="font-size: 0.85rem; {% if not notify.is_read %}background-color: var(--bs-light-bg-subtle);{% endif %}">
+                                    <a href="{{ url_for('main.click_notification', notification_id=notify.id) }}" class="text-decoration-none text-dark d-flex gap-2 w-100">
+                                        <i class="{{ notify.icon_class }} mt-1"></i>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <strong class="d-block text-truncate" style="max-width: 180px;">{{ notify.title }}</strong>
+                                                <small class="text-muted" style="font-size: 0.7rem;">{{ notify.created_at.strftime('%H:%M') }}</small>
+                                            </div>
+                                            <span class="text-muted d-block text-truncate" style="max-width: 220px; font-size: 0.75rem;">{{ notify.message }}</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-3 text-center text-muted small">
+                                    No notifications available.
+                                </div>
+                            {% endif %}
                         </div>
+                        {% if current_user.role.value == 'student' %}
+                        <div class="dropdown-footer text-center py-2 border-top">
+                            <a href="{{ url_for('student.notifications_page') }}" class="text-decoration-none small">View all notifications</a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -141,6 +165,9 @@
                                 <span>{{ current_user.email }}</span>
                             </div>
                         </div>
+                        <a class="dropdown-item" href="{{ url_for(role_value ~ '.profile') }}">
+                            <i class="fa-solid fa-user me-2"></i>Profile
+                        </a>
                         <a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
                             <i class="fa-solid fa-lock me-2"></i>Change Password
                         </a>

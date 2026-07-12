@@ -42,10 +42,9 @@ def seed_reference_data():
             college = College(name=c_data["name"], code=c_data["code"], is_active=True)
             db.session.add(college)
             log.append(f"Created College: {c_data['code']}")
-        elif college.name != c_data["name"] or not college.is_active:
-            college.name = c_data["name"]
+        elif not college.is_active:
             college.is_active = True
-            log.append(f"Updated College: {c_data['code']}")
+            log.append(f"Activated College: {c_data['code']}")
 
     db.session.flush()
 
@@ -133,13 +132,15 @@ def seed_demo_admin():
     return f"{'Created' if created else 'Updated'} demo Admin: {data['email']}"
 
 
-def seed_demo_tpo():
-    data = DEMO_ACCOUNTS["tpo"]
+def seed_demo_tpo(data=None):
+    if data is None:
+        data = DEMO_ACCOUNTS["tpo"]
     college = College.query.filter_by(code=data["college_code"]).first()
     if college is None:
         return f"Skipped demo TPO: college {data['college_code']} not seeded yet"
 
     user, created = _upsert_user(data["email"], UserRole.TPO, data["password"])
+    user.college_id = college.id
 
     tpo = TpoAdmin.query.filter_by(user_id=user.id).first()
     if tpo is None:
@@ -190,6 +191,7 @@ def seed_demo_student():
         return f"Skipped demo Student: branch {data['branch_code']} not seeded yet"
 
     user, created = _upsert_user(data["email"], UserRole.STUDENT, data["password"])
+    user.college_id = college.id
 
     student = Student.query.filter_by(user_id=user.id).first()
     if student is None:
@@ -217,12 +219,15 @@ def seed_demo_student():
 
 
 def seed_demo_accounts():
-    return [
+    log = [
         seed_demo_admin(),
-        seed_demo_tpo(),
         seed_demo_recruiter(),
         seed_demo_student(),
     ]
+    for key, value in DEMO_ACCOUNTS.items():
+        if key.startswith("tpo"):
+            log.append(seed_demo_tpo(value))
+    return log
 
 
 def seed_demo_drive():

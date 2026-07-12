@@ -43,54 +43,49 @@ from app.models.enums import (
 class TpoService:
     @staticmethod
     def get_dashboard_stats(college_id):
-        # Total Students
-        total_students = Student.query.filter_by(college_id=college_id).count()
+        stats = db.session.query(
+            db.session.query(Student).filter_by(college_id=college_id).statement.with_only_columns(func.count(Student.id)).scalar_subquery(),
+            
+            db.session.query(func.count(Student.id.distinct()))
+                .join(Application, Student.id == Application.student_id)
+                .filter(Student.college_id == college_id, Application.status == ApplicationStatus.PLACED).scalar_subquery(),
+                
+            db.session.query(func.max(Offer.package_offered_lpa))
+                .join(Application, Offer.application_id == Application.id)
+                .join(Student, Application.student_id == Student.id)
+                .filter(Student.college_id == college_id, Application.status == ApplicationStatus.PLACED).scalar_subquery(),
+                
+            db.session.query(func.avg(Offer.package_offered_lpa))
+                .join(Application, Offer.application_id == Application.id)
+                .join(Student, Application.student_id == Student.id)
+                .filter(Student.college_id == college_id, Application.status == ApplicationStatus.PLACED).scalar_subquery(),
+                
+            db.session.query(PlacementDrive).filter(
+                PlacementDrive.college_id == college_id,
+                PlacementDrive.status.in_([DriveStatus.PUBLISHED, DriveStatus.REGISTRATION_CLOSED, DriveStatus.ONGOING])
+            ).statement.with_only_columns(func.count(PlacementDrive.id)).scalar_subquery(),
+            
+            db.session.query(Student).filter_by(
+                college_id=college_id,
+                profile_status=ProfileStatus.PENDING_VERIFICATION
+            ).statement.with_only_columns(func.count(Student.id)).scalar_subquery(),
+            
+            db.session.query(User).filter_by(
+                role=UserRole.RECRUITER,
+                is_verified=False
+            ).statement.with_only_columns(func.count(User.id)).scalar_subquery()
+        ).first()
 
-        # Placed Students (distinct students with PLACED application status)
-        placed_students = db.session.query(func.count(Student.id.distinct()))\
-            .join(Application, Student.id == Application.student_id)\
-            .filter(Student.college_id == college_id, Application.status == ApplicationStatus.PLACED)\
-            .scalar() or 0
+        total_students = stats[0] or 0
+        placed_students = stats[1] or 0
+        highest_package_val = float(stats[2]) if stats[2] is not None else 0.0
+        average_package_val = float(stats[3]) if stats[3] is not None else 0.0
+        active_drives = stats[4] or 0
+        pending_verifications = stats[5] or 0
+        pending_recruiters = stats[6] or 0
 
-        # Unplaced Students
         unplaced_students = max(0, total_students - placed_students)
-
-        # Placement Percentage
         placement_percentage = round((placed_students / total_students * 100), 2) if total_students > 0 else 0.0
-
-        # Highest Package (LPA)
-        highest_package = db.session.query(func.max(Offer.package_offered_lpa))\
-            .join(Application, Offer.application_id == Application.id)\
-            .join(Student, Application.student_id == Student.id)\
-            .filter(Student.college_id == college_id, Application.status == ApplicationStatus.PLACED)\
-            .scalar()
-        highest_package_val = float(highest_package) if highest_package is not None else 0.0
-
-        # Average Package (LPA)
-        average_package = db.session.query(func.avg(Offer.package_offered_lpa))\
-            .join(Application, Offer.application_id == Application.id)\
-            .join(Student, Application.student_id == Student.id)\
-            .filter(Student.college_id == college_id, Application.status == ApplicationStatus.PLACED)\
-            .scalar()
-        average_package_val = float(average_package) if average_package is not None else 0.0
-
-        # Active Drives
-        active_drives = PlacementDrive.query.filter(
-            PlacementDrive.college_id == college_id,
-            PlacementDrive.status.in_([DriveStatus.PUBLISHED, DriveStatus.REGISTRATION_CLOSED, DriveStatus.ONGOING])
-        ).count()
-
-        # Pending Student Verifications
-        pending_verifications = Student.query.filter_by(
-            college_id=college_id,
-            profile_status=ProfileStatus.PENDING_VERIFICATION
-        ).count()
-
-        # Pending Recruiter Verifications (global, but of interest to TPO)
-        pending_recruiters = User.query.filter_by(
-            role=UserRole.RECRUITER,
-            is_verified=False
-        ).count()
 
         return {
             "total_students": total_students,
@@ -132,10 +127,16 @@ class TpoService:
 
     @staticmethod
     def get_recent_offers(college_id, limit=5):
+        from sqlalchemy.orm import joinedload
+        from app.models.drive import PlacementDrive
         offers = db.session.query(Offer)\
             .join(Application, Offer.application_id == Application.id)\
             .join(Student, Application.student_id == Student.id)\
             .filter(Student.college_id == college_id)\
+            .options(
+                joinedload(Offer.application).joinedload(Application.student),
+                joinedload(Offer.application).joinedload(Application.drive).joinedload(PlacementDrive.company)
+            )\
             .order_by(Offer.created_at.desc())\
             .limit(limit)\
             .all()
@@ -192,16 +193,24 @@ class TpoService:
     @staticmethod
     def get_branch_placement_stats(college_id):
         branches = Branch.query.filter_by(college_id=college_id, is_active=True).all()
+        
+        # 1. Total students per branch
+        total_students_per_branch = db.session.query(Student.branch_id, func.count(Student.id))\
+            .filter(Student.college_id == college_id)\
+            .group_by(Student.branch_id).all()
+        total_map = {row[0]: row[1] for row in total_students_per_branch}
+
+        # 2. Placed students per branch
+        placed_students_per_branch = db.session.query(Student.branch_id, func.count(Student.id.distinct()))\
+            .join(Application, Student.id == Application.student_id)\
+            .filter(Student.college_id == college_id, Application.status == ApplicationStatus.PLACED)\
+            .group_by(Student.branch_id).all()
+        placed_map = {row[0]: row[1] for row in placed_students_per_branch}
+
         branch_data = []
         for b in branches:
-            total_students = Student.query.filter_by(branch_id=b.id, college_id=college_id).count()
-            placed_students = db.session.query(func.count(Student.id.distinct()))\
-                .join(Application, Student.id == Application.student_id)\
-                .filter(
-                    Student.branch_id == b.id,
-                    Student.college_id == college_id,
-                    Application.status == ApplicationStatus.PLACED
-                ).scalar() or 0
+            total_students = total_map.get(b.id, 0)
+            placed_students = placed_map.get(b.id, 0)
             branch_data.append({
                 "code": b.code,
                 "name": b.name,
@@ -257,16 +266,19 @@ class TpoService:
 
     @staticmethod
     def get_recent_drives(college_id, limit=5):
-        # We need drive details along with registration count
-        drives = PlacementDrive.query.filter_by(college_id=college_id)\
+        from sqlalchemy.orm import selectinload
+        from app.models.application import Application
+        drives_with_counts = db.session.query(PlacementDrive, func.count(Application.id))\
+            .outerjoin(Application, PlacementDrive.id == Application.drive_id)\
+            .filter(PlacementDrive.college_id == college_id)\
+            .options(selectinload(PlacementDrive.company))\
+            .group_by(PlacementDrive.id)\
             .order_by(PlacementDrive.created_at.desc())\
             .limit(limit)\
             .all()
 
         drives_data = []
-        for d in drives:
-            # Count registered students
-            reg_count = d.applications.count()
+        for d, reg_count in drives_with_counts:
             drives_data.append({
                 "id": str(d.id),
                 "title": d.title,
@@ -759,11 +771,16 @@ class TpoService:
 
     @staticmethod
     def get_verification_stats(college_id):
-        total = Student.query.filter_by(college_id=college_id).count()
-        verified = Student.query.filter_by(college_id=college_id, profile_status=ProfileStatus.VERIFIED).count()
-        pending = Student.query.filter_by(college_id=college_id, profile_status=ProfileStatus.PENDING_VERIFICATION).count()
-        rejected = Student.query.filter_by(college_id=college_id, profile_status=ProfileStatus.REJECTED).count()
-        incomplete = Student.query.filter_by(college_id=college_id, profile_status=ProfileStatus.INCOMPLETE).count()
+        stats_query = db.session.query(Student.profile_status, func.count(Student.id))\
+            .filter(Student.college_id == college_id)\
+            .group_by(Student.profile_status).all()
+        stats_map = {status: count for status, count in stats_query}
+        
+        verified = stats_map.get(ProfileStatus.VERIFIED, 0)
+        pending = stats_map.get(ProfileStatus.PENDING_VERIFICATION, 0)
+        rejected = stats_map.get(ProfileStatus.REJECTED, 0)
+        incomplete = stats_map.get(ProfileStatus.INCOMPLETE, 0)
+        total = verified + pending + rejected + incomplete
 
         return {
             "total": total,
@@ -777,10 +794,23 @@ class TpoService:
     def get_branch_verification_stats(college_id):
         # Fetch branches and calculate total and verified students for Chart.js
         branches = Branch.query.filter_by(college_id=college_id, is_active=True).all()
+        
+        # Pre-fetch total student counts per branch in a single query
+        total_counts = db.session.query(Student.branch_id, func.count(Student.id))\
+            .filter(Student.college_id == college_id)\
+            .group_by(Student.branch_id).all()
+        total_map = {row[0]: row[1] for row in total_counts}
+
+        # Pre-fetch verified student counts per branch in a single query
+        verified_counts = db.session.query(Student.branch_id, func.count(Student.id))\
+            .filter(Student.college_id == college_id, Student.profile_status == ProfileStatus.VERIFIED)\
+            .group_by(Student.branch_id).all()
+        verified_map = {row[0]: row[1] for row in verified_counts}
+
         branch_stats = []
         for b in branches:
-            total_students = Student.query.filter_by(branch_id=b.id, college_id=college_id).count()
-            verified_students = Student.query.filter_by(branch_id=b.id, college_id=college_id, profile_status=ProfileStatus.VERIFIED).count()
+            total_students = total_map.get(b.id, 0)
+            verified_students = verified_map.get(b.id, 0)
             rate = round((verified_students / total_students * 100), 2) if total_students > 0 else 0.0
             
             branch_stats.append({
@@ -813,7 +843,9 @@ class TpoService:
 
     @classmethod
     def verify_student(cls, student_id, verifier_user_id):
+        from app.utils.notification_service import NotificationService
         student = Student.query.filter_by(id=student_id).first_or_404()
+        cls.validate_college_access(student)
         if not student.is_profile_complete():
             raise ValueError("Student profile is not complete. Cannot verify until all sections are filled.")
         if student.profile_status != ProfileStatus.PENDING_VERIFICATION:
@@ -822,30 +854,33 @@ class TpoService:
         student.profile_status = ProfileStatus.VERIFIED
         student.verified_at = db.func.now()
         student.verified_by = verifier_user_id
+        student.rejection_reason = None
 
         # Dispatch system notification to student user
-        notification = Notification(
+        NotificationService.create_notification(
             user_id=student.user_id,
             title="Profile Verified",
-            message="Congratulations! Your academic profile has been verified by the placement office. Your academic data is now locked.",
+            message="Your profile has been successfully verified by the Training & Placement Office. You are now eligible to access placement drives.",
             notification_type=NotificationType.SUCCESS,
             entity_type="student",
             entity_id=student.id
         )
-        db.session.add(notification)
-        db.session.commit()
         return student
 
     @classmethod
     def reject_student(cls, student_id, verifier_user_id, remarks):
+        from app.utils.notification_service import NotificationService
         student = Student.query.filter_by(id=student_id).first_or_404()
+        cls.validate_college_access(student)
         student.profile_status = ProfileStatus.REJECTED
         student.verified_at = db.func.now()
         student.verified_by = verifier_user_id
+        student.rejection_reason = remarks
+        student.rejection_count = (student.rejection_count or 0) + 1
 
         # Dispatch system notification to student user
-        msg = f"Your profile verification request was rejected. Reason/Remarks: {remarks}" if remarks else "Your profile verification request was rejected. Please review your details and re-submit."
-        notification = Notification(
+        msg = f"Your profile verification request was rejected.\n\nReason:\n{remarks}\n\nPlease update your profile and submit again." if remarks else "Your profile verification request was rejected. Please update your profile and submit again."
+        NotificationService.create_notification(
             user_id=student.user_id,
             title="Profile Verification Rejected",
             message=msg,
@@ -853,8 +888,6 @@ class TpoService:
             entity_type="student",
             entity_id=student.id
         )
-        db.session.add(notification)
-        db.session.commit()
         return student
 
     @classmethod
@@ -1108,3 +1141,49 @@ class TpoService:
             .filter(Student.college_id == college_id, Student.id.not_in(placed_subquery))\
             .order_by(Student.first_name.asc())\
             .all()
+
+    @staticmethod
+    def validate_college_access(entity):
+        """
+        Validate if the logged-in user is authorized to access the entity based on college ownership.
+        Supported entities: Student, PlacementDrive, Resume.
+        """
+        from flask import has_request_context
+        if not has_request_context():
+            return
+
+        from flask_login import current_user
+        from flask import abort
+        from app.models.enums import UserRole
+        from app.models.student import Student, Resume
+        from app.models.drive import PlacementDrive
+
+        if not current_user or not current_user.is_authenticated:
+            abort(401)
+
+        # Extensible check: Admin always has access
+        if current_user.role == UserRole.ADMIN:
+            return
+
+        # Enforce TPO authorization based on college ownership
+        if current_user.role == UserRole.TPO:
+            tpo_admin = current_user.tpo_profile
+            if not tpo_admin:
+                abort(403)
+
+            if isinstance(entity, Student):
+                if entity.college_id != tpo_admin.college_id:
+                    abort(403)
+            elif isinstance(entity, PlacementDrive):
+                if entity.college_id != tpo_admin.college_id:
+                    abort(403)
+            elif isinstance(entity, Resume):
+                if entity.student.college_id != tpo_admin.college_id:
+                    abort(403)
+            else:
+                abort(403)
+
+        # Future Extensibility: Recruiter authorization
+        # elif current_user.role == UserRole.RECRUITER:
+        #     # The recruiter is authorized based on company ownership.
+        #     pass

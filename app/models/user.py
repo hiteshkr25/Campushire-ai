@@ -1,5 +1,5 @@
 from flask_login import UserMixin
-from sqlalchemy.dialects.postgresql import CITEXT
+from sqlalchemy.dialects.postgresql import CITEXT, UUID
 
 from app.extensions import db
 from app.models.base import BaseModel
@@ -21,6 +21,15 @@ class User(UserMixin, BaseModel):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
     last_login_at = db.Column(db.DateTime(timezone=True))
+    college_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey("colleges.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    college = db.relationship(
+        "College",
+        backref=db.backref("users", lazy="dynamic"),
+    )
 
     student_profile = db.relationship(
         "Student",

@@ -9,9 +9,10 @@ setup-time only fixture module.
 """
 
 DEMO_COLLEGES = [
-    {"name": "Indian Institute of Technology, Bombay", "code": "IITB"},
+    {"name": "Indian Institute of Technology Bombay", "code": "IITB"},
     {"name": "Birla Institute of Technology and Science, Pilani", "code": "BITS"},
-    {"name": "Graphic Era University, Dehradun", "code": "GEU"},
+    {"name": "Graphic Era University", "code": "GEU"},
+    {"name": "National Institute of Technology Kurukshetra", "code": "NITK"},
 ]
 
 DEMO_BRANCHES = [
@@ -25,6 +26,7 @@ DEMO_BRANCHES = [
     {"name": "Information Technology", "code": "IT", "college_code": "GEU"},
     {"name": "Master of Business Administration", "code": "MBA", "college_code": "GEU"},
     {"name": "Master of Computer Applications", "code": "MCA", "college_code": "GEU"},
+    {"name": "Computer Science & Engineering", "code": "CSE", "college_code": "NITK"},
 ]
 
 DEMO_SKILLS = [
@@ -50,11 +52,31 @@ DEMO_ACCOUNTS = {
         "password": DEMO_PASSWORD,
     },
     "tpo": {
-        "email": "tpo.demo@campushire.ai",
+        "email": "tpo@geu.edu.in",
         "password": DEMO_PASSWORD,
         "college_code": "GEU",
         "first_name": "Priya",
         "last_name": "Sharma",
+        "designation": "Training & Placement Officer",
+        "department": "Placement Cell",
+        "is_primary_tpo": True,
+    },
+    "tpo_iitb": {
+        "email": "tpo@iitb.ac.in",
+        "password": DEMO_PASSWORD,
+        "college_code": "IITB",
+        "first_name": "Rahul",
+        "last_name": "Mehta",
+        "designation": "Training & Placement Officer",
+        "department": "Placement Cell",
+        "is_primary_tpo": True,
+    },
+    "tpo_nitk": {
+        "email": "tpo@nitk.edu",
+        "password": DEMO_PASSWORD,
+        "college_code": "NITK",
+        "first_name": "Neha",
+        "last_name": "Verma",
         "designation": "Training & Placement Officer",
         "department": "Placement Cell",
         "is_primary_tpo": True,

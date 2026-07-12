@@ -182,7 +182,7 @@ class RecruiterService:
                 InterviewSchedule.status == ScheduleStatus.SCHEDULED
             ).options(
                 joinedload(InterviewSchedule.application).joinedload(Application.student),
-                joinedload(InterviewSchedule.round)
+                joinedload(InterviewSchedule.round).joinedload(InterviewRound.drive)
             ).order_by(InterviewSchedule.scheduled_start.asc())\
             .limit(limit)\
             .all()

@@ -59,6 +59,27 @@ class Student(BaseModel):
         UUID(as_uuid=True),
         db.ForeignKey("users.id", ondelete="SET NULL"),
     )
+    rejection_reason = db.Column(db.Text)
+    rejection_count = db.Column(db.Integer, default=0, nullable=False)
+
+    @property
+    def reviewed_by(self):
+        return self.verified_by
+
+    @property
+    def reviewed_at(self):
+        return self.verified_at
+
+    @property
+    def verifier_name(self):
+        if not self.verifier:
+            return "System / Auto"
+        if self.verifier.role.value == "tpo" and self.verifier.tpo_profile:
+            return self.verifier.tpo_profile.full_name
+        if self.verifier.role.value == "admin":
+            return "Administrator"
+        return self.verifier.email
+
 
     skills = db.relationship(
         "StudentSkill",

@@ -92,26 +92,28 @@ class EligibilityService:
     }
 
     @classmethod
-    def evaluate(cls, student, drive):
+    def evaluate(cls, student, drive, student_skills=None, rules=None, branch_links=None):
         checks = []
-        branch_check = cls._check_branch(student, drive)
+        branch_check = cls._check_branch(student, drive, branch_links=branch_links)
         checks.append(branch_check)
 
-        rules = (
-            drive.eligibility_rules.order_by(
-                EligibilityRule.display_order.asc(),
-                EligibilityRule.created_at.asc(),
-            ).all()
-        )
+        if rules is None:
+            rules = (
+                drive.eligibility_rules.order_by(
+                    EligibilityRule.display_order.asc(),
+                    EligibilityRule.created_at.asc(),
+                ).all()
+            )
         for rule in rules:
-            checks.append(cls._evaluate_rule(student, rule))
+            checks.append(cls._evaluate_rule(student, rule, student_skills=student_skills))
 
         eligible = all(check.passed for check in checks if check.is_mandatory)
         return EligibilityResult(eligible=eligible, checks=checks)
 
     @classmethod
-    def _check_branch(cls, student, drive):
-        branch_links = drive.drive_branches.all()
+    def _check_branch(cls, student, drive, branch_links=None):
+        if branch_links is None:
+            branch_links = drive.drive_branches.all()
         if not branch_links:
             return EligibilityCheck(
                 rule_id="branch",
@@ -136,9 +138,9 @@ class EligibilityService:
         )
 
     @classmethod
-    def _evaluate_rule(cls, student, rule):
+    def _evaluate_rule(cls, student, rule, student_skills=None):
         label = cls.RULE_LABELS.get(rule.rule_type, rule.rule_type.value)
-        passed, message = cls._apply_rule(student, rule)
+        passed, message = cls._apply_rule(student, rule, student_skills=student_skills)
         return EligibilityCheck(
             rule_id=str(rule.id),
             label=label,
@@ -148,7 +150,7 @@ class EligibilityService:
         )
 
     @classmethod
-    def _apply_rule(cls, student, rule):
+    def _apply_rule(cls, student, rule, student_skills=None):
         value = rule.rule_value
         operator = rule.operator
         rule_type = rule.rule_type
@@ -166,7 +168,7 @@ class EligibilityService:
         if rule_type == EligibilityRuleType.ALLOWED_BATCH:
             return cls._compare_batch(student.batch, operator or EligibilityOperator.IN, value)
         if rule_type == EligibilityRuleType.REQUIRED_SKILL:
-            return cls._compare_skill(student, operator or EligibilityOperator.CONTAINS, value)
+            return cls._compare_skill(student, operator or EligibilityOperator.CONTAINS, value, student_skills=student_skills)
         if rule_type == EligibilityRuleType.GENDER:
             return cls._compare_text(student.gender, operator or EligibilityOperator.EQ, value, "gender")
         if rule_type == EligibilityRuleType.CUSTOM:
@@ -210,13 +212,15 @@ class EligibilityService:
         return False, f"Your batch ({batch}) is not in the allowed list."
 
     @classmethod
-    def _compare_skill(cls, student, operator, expected_raw):
+    def _compare_skill(cls, student, operator, expected_raw, student_skills=None):
         expected = cls._normalize_json_value(expected_raw)
-        skill_names = {
-            link.skill.name.strip().lower()
-            for link in student.skills.all()
-            if link.skill and link.skill.name
-        }
+        if student_skills is None:
+            student_skills = {
+                link.skill.name.strip().lower()
+                for link in student.skills.all()
+                if link.skill and link.skill.name
+            }
+        skill_names = student_skills
         required = expected if isinstance(expected, list) else [expected]
         required = [str(item).strip().lower() for item in required if item]
 
@@ -286,7 +290,7 @@ class DriveService:
         return True
 
     @classmethod
-    def list_for_student(cls, student, *, q=None, location_type=None, min_package=None, eligibility_filter=None, sort="deadline"):
+    def list_for_student(cls, student, *, q=None, location_type=None, min_package=None, eligibility_filter=None, sort="deadline", student_skills=None):
         if student.profile_status != ProfileStatus.VERIFIED:
             return []
 
@@ -339,9 +343,46 @@ class DriveService:
 
         drives = query.all()
         application_map = cls._application_map(student, [drive.id for drive in drives])
+
+        # Pre-load student skills with names in a single query if not provided
+        if student_skills is None:
+            from app.models.student import StudentSkill
+            student_skills_loaded = StudentSkill.query.options(joinedload(StudentSkill.skill))\
+                .filter_by(student_id=student.id).all()
+            student_skills = {
+                link.skill.name.strip().lower()
+                for link in student_skills_loaded
+                if link.skill and link.skill.name
+            }
+
+        # Batch query all drive branches and eligibility rules for the fetched drives
+        from app.models.drive import EligibilityRule, DriveBranch
+        from collections import defaultdict
+        
+        drive_ids = [d.id for d in drives]
+        
+        rules_map = defaultdict(list)
+        if drive_ids:
+            rules_list = EligibilityRule.query.filter(EligibilityRule.drive_id.in_(drive_ids))\
+                .order_by(EligibilityRule.display_order.asc(), EligibilityRule.created_at.asc()).all()
+            for rule in rules_list:
+                rules_map[rule.drive_id].append(rule)
+            
+        branches_map = defaultdict(list)
+        if drive_ids:
+            branches_list = DriveBranch.query.filter(DriveBranch.drive_id.in_(drive_ids)).all()
+            for b_link in branches_list:
+                branches_map[b_link.drive_id].append(b_link)
+
         items = []
         for drive in drives:
-            eligibility = EligibilityService.evaluate(student, drive)
+            eligibility = EligibilityService.evaluate(
+                student,
+                drive,
+                student_skills=student_skills,
+                rules=rules_map.get(drive.id),
+                branch_links=branches_map.get(drive.id)
+            )
             if eligibility_filter == "eligible" and not eligibility.eligible:
                 continue
             if eligibility_filter == "not_eligible" and eligibility.eligible:
@@ -548,20 +589,27 @@ class ApplicationService:
         return application
 
     @staticmethod
-    def summary(student):
-        applications = Application.query.filter_by(student_id=student.id).all()
-        active = sum(1 for app in applications if app.status in ACTIVE_APPLICATION_STATUSES)
-        withdrawn = sum(1 for app in applications if app.status == ApplicationStatus.WITHDRAWN)
-        placed = sum(1 for app in applications if app.status == ApplicationStatus.PLACED)
+    def summary(student, preloaded_applications=None):
+        if preloaded_applications is None:
+            preloaded_applications = Application.query.filter_by(student_id=student.id).all()
+        active = sum(1 for app in preloaded_applications if app.status in ACTIVE_APPLICATION_STATUSES)
+        withdrawn = sum(1 for app in preloaded_applications if app.status == ApplicationStatus.WITHDRAWN)
+        placed = sum(1 for app in preloaded_applications if app.status == ApplicationStatus.PLACED)
         return {
-            "total": len(applications),
+            "total": len(preloaded_applications),
             "active": active,
             "withdrawn": withdrawn,
             "placed": placed,
         }
 
     @staticmethod
-    def recent_active(student, limit=5):
+    def recent_active(student, limit=5, preloaded_applications=None):
+        if preloaded_applications is not None:
+            active_apps = [app for app in preloaded_applications if app.status in ACTIVE_APPLICATION_STATUSES]
+            from datetime import datetime
+            active_apps.sort(key=lambda a: (a.applied_at or datetime.min, a.created_at or datetime.min), reverse=True)
+            return active_apps[:limit]
+
         return (
             Application.query.options(
                 joinedload(Application.drive).joinedload(PlacementDrive.company)

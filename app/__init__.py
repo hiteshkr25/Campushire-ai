@@ -52,7 +52,29 @@ def register_extensions(app):
         flash("Please sign in to access this page.", "warning")
         return redirect(url_for("auth.login", next=request.url))
 
-    import app.models  # noqa: F401 — register SQLAlchemy models
+    import app.models as _models  # noqa: F401 — register SQLAlchemy models
+
+    @app.context_processor
+    def inject_global_notifications():
+        from flask_login import current_user
+        from app.models.notification import Notification
+        from app.utils.notification_service import NotificationService
+        
+        if current_user and current_user.is_authenticated:
+            recent_notifications = NotificationService.get_dropdown_notifications(current_user.id, limit=10)
+            unread_in_memory = sum(1 for n in recent_notifications if not n.is_read)
+            if len(recent_notifications) < 10 or (len(recent_notifications) == 10 and recent_notifications[-1].is_read):
+                unread_count = unread_in_memory
+            else:
+                unread_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+            return {
+                "unread_notifications_count": unread_count,
+                "recent_notifications": recent_notifications,
+            }
+        return {
+            "unread_notifications_count": 0,
+            "recent_notifications": [],
+        }
 
 
 def register_blueprints(app):

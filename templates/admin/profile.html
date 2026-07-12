@@ -1,0 +1,119 @@
+{% extends "portals/base_portal.html" %}
+
+{% block title %}Admin Profile - CampusHire AI{% endblock %}
+{% block portal_heading %}Profile Management{% endblock %}
+{% block portal_subheading %}Manage your administrator identity and view general system utilization statistics.{% endblock %}
+{% block breadcrumb_current %}Profile{% endblock %}
+
+{% block portal_content %}
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="card dashboard-panel glass-dashboard-card border-0 profile-form-card">
+            <div class="card-body">
+                <div class="panel-header mb-4">
+                    <div>
+                        <h2>Administrator Profile</h2>
+                        <p>View your personal administrator credentials and system info.</p>
+                    </div>
+                </div>
+
+                <section class="profile-section mb-4">
+                    <h3 class="h5 border-bottom pb-2 mb-3">Personal & Contact Details</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">User ID / Email</label>
+                            <input type="text" class="form-control" value="{{ admin_user.email }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">System Role</label>
+                            <input type="text" class="form-control" value="System Administrator" disabled>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="profile-section mb-4">
+                    <h3 class="h5 border-bottom pb-2 mb-3">System Information</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Security Level</label>
+                            <input type="text" class="form-control" value="Root Access / Superuser" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Account Status</label>
+                            <input type="text" class="form-control" value="Active & Verified" disabled>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="profile-section">
+                    <h3 class="h5 border-bottom pb-2 mb-3">Account Meta Information</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Registration Date</label>
+                            <input type="text" class="form-control" value="{{ admin_user.created_at.strftime('%d %b %Y, %I:%M %p') if admin_user.created_at else 'System Initial' }}" disabled>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card dashboard-panel glass-dashboard-card border-0 mb-4 text-center py-4">
+            <div class="card-body">
+                <div class="profile-completion-ring mx-auto mb-3 d-flex align-items-center justify-content-center bg-primary text-white rounded-circle fs-2 fw-bold" style="width: 80px; height: 80px;">
+                    {{ admin_user.email[:2]|upper }}
+                </div>
+                <h4 class="h5 mb-1">System Administrator</h4>
+                <p class="text-muted small mb-0">{{ admin_user.email }}</p>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle mt-2">Super User</span>
+            </div>
+        </div>
+
+        <div class="card dashboard-panel glass-dashboard-card border-0">
+            <div class="card-body">
+                <div class="panel-header mb-3">
+                    <h2>System Metrics</h2>
+                </div>
+                <div class="profile-list d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-users-gear text-primary fs-5"></i>
+                            <span>Total System Users</span>
+                        </div>
+                        <strong class="text-primary fs-5">{{ stats.total_users }}</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap text-success fs-5"></i>
+                            <span>Registered Students</span>
+                        </div>
+                        <strong class="text-success fs-5">{{ stats.total_students }}</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-handshake text-info fs-5"></i>
+                            <span>Hiring Recruiters</span>
+                        </div>
+                        <strong class="text-info fs-5">{{ stats.total_recruiters }}</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-user-shield text-warning fs-5"></i>
+                            <span>College TPO Admins</span>
+                        </div>
+                        <strong class="text-warning fs-5">{{ stats.total_tpos }}</strong>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-briefcase text-danger fs-5"></i>
+                            <span>Total Placement Drives</span>
+                        </div>
+                        <strong class="text-danger fs-5">{{ stats.total_drives }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

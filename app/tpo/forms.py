@@ -184,3 +184,10 @@ class TpoDriveSearchForm(FlaskForm):
     )
     company_id = SelectField("Company", validators=[Optional()], coerce=str)
     submit = SubmitField("Apply Filters")
+
+
+class TpoProfileForm(FlaskForm):
+    phone = StringField("Phone Number", validators=[Optional(), Length(max=20)])
+    designation = StringField("Academic Designation", validators=[Optional(), Length(max=100)])
+    department = StringField("Department / Office Address", validators=[Optional(), Length(max=100)])
+    submit = SubmitField("Save Profile")

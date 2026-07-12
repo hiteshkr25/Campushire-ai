@@ -37,31 +37,40 @@ from app.models.enums import (
 class AdminService:
     @staticmethod
     def get_dashboard_stats():
-        total_users = User.query.count()
-        active_users = User.query.filter_by(is_active=True).count()
-        
-        students = Student.query.count()
-        recruiters = Recruiter.query.count()
-        tpos = TpoAdmin.query.count()
-        admins = User.query.filter_by(role=UserRole.ADMIN).count()
+        from sqlalchemy import case, literal
+        stats = db.session.query(
+            db.session.query(User).statement.with_only_columns(func.count(User.id)).scalar_subquery(),
+            db.session.query(User).filter_by(is_active=True).statement.with_only_columns(func.count(User.id)).scalar_subquery(),
+            db.session.query(Student).statement.with_only_columns(func.count(Student.id)).scalar_subquery(),
+            db.session.query(Recruiter).statement.with_only_columns(func.count(Recruiter.id)).scalar_subquery(),
+            db.session.query(TpoAdmin).statement.with_only_columns(func.count(TpoAdmin.id)).scalar_subquery(),
+            db.session.query(User).filter_by(role=UserRole.ADMIN).statement.with_only_columns(func.count(User.id)).scalar_subquery(),
+            db.session.query(PlacementDrive).statement.with_only_columns(func.count(PlacementDrive.id)).scalar_subquery(),
+            db.session.query(PlacementDrive).filter(PlacementDrive.status.in_([DriveStatus.PUBLISHED, DriveStatus.ONGOING])).statement.with_only_columns(func.count(PlacementDrive.id)).scalar_subquery(),
+            db.session.query(Application).statement.with_only_columns(func.count(Application.id)).scalar_subquery(),
+            db.session.query(Offer).statement.with_only_columns(func.count(Offer.id)).scalar_subquery(),
+            db.session.query(Offer).filter_by(status=OfferStatus.ACCEPTED).statement.with_only_columns(func.count(Offer.id)).scalar_subquery()
+        ).first()
 
-        total_drives = PlacementDrive.query.count()
-        active_drives = PlacementDrive.query.filter(
-            PlacementDrive.status.in_([DriveStatus.PUBLISHED, DriveStatus.ONGOING])
-        ).count()
-
-        total_applications = Application.query.count()
-        total_offers = Offer.query.count()
-        accepted_offers = Offer.query.filter_by(status=OfferStatus.ACCEPTED).count()
+        total_users = stats[0] or 0
+        active_users = stats[1] or 0
+        students = stats[2] or 0
+        recruiters = stats[3] or 0
+        tpos = stats[4] or 0
+        admins = stats[5] or 0
+        total_drives = stats[6] or 0
+        active_drives = stats[7] or 0
+        total_applications = stats[8] or 0
+        total_offers = stats[9] or 0
+        accepted_offers = stats[10] or 0
 
         # Placement Percentage
         placed_students = db.session.query(func.count(Student.id.distinct()))\
             .join(Application, Student.id == Application.student_id)\
             .filter(Application.status == ApplicationStatus.PLACED)\
             .scalar() or 0
-        total_students = Student.query.count()
         
-        placement_percentage = round((placed_students / total_students * 100), 2) if total_students > 0 else 0.0
+        placement_percentage = round((placed_students / students * 100), 2) if students > 0 else 0.0
 
         return {
             "total_users": total_users,
@@ -80,27 +89,44 @@ class AdminService:
 
     @staticmethod
     def get_system_stats():
-        total_logins = AuditLog.query.filter_by(action=AuditAction.LOGIN).count()
-        failed_logins = AuditLog.query.filter_by(action=AuditAction.LOGIN_FAILED).count()
-        user_registrations = User.query.count()
-
         now = datetime.now(timezone.utc)
         one_day_ago = now - timedelta(days=1)
-        dau = User.query.filter(User.last_login_at >= one_day_ago).count()
 
-        resume_storage = db.session.query(func.sum(Resume.file_size_bytes)).scalar() or 0
-        resume_uploads = Resume.query.count()
-        offer_uploads = Offer.query.filter(Offer.offer_letter_path.isnot(None)).count()
+        stats = db.session.query(
+            db.session.query(AuditLog).filter_by(action=AuditAction.LOGIN).statement.with_only_columns(func.count(AuditLog.id)).scalar_subquery(),
+            db.session.query(AuditLog).filter_by(action=AuditAction.LOGIN_FAILED).statement.with_only_columns(func.count(AuditLog.id)).scalar_subquery(),
+            db.session.query(User).statement.with_only_columns(func.count(User.id)).scalar_subquery(),
+            db.session.query(User).filter(User.last_login_at >= one_day_ago).statement.with_only_columns(func.count(User.id)).scalar_subquery(),
+            db.session.query(func.sum(Resume.file_size_bytes)).scalar_subquery(),
+            db.session.query(Resume).statement.with_only_columns(func.count(Resume.id)).scalar_subquery(),
+            db.session.query(Offer).filter(Offer.offer_letter_path.isnot(None)).statement.with_only_columns(func.count(Offer.id)).scalar_subquery(),
+            
+            db.session.query(Student).statement.with_only_columns(func.count(Student.id)).scalar_subquery(),
+            db.session.query(Recruiter).statement.with_only_columns(func.count(Recruiter.id)).scalar_subquery(),
+            db.session.query(Company).statement.with_only_columns(func.count(Company.id)).scalar_subquery(),
+            db.session.query(PlacementDrive).statement.with_only_columns(func.count(PlacementDrive.id)).scalar_subquery(),
+            db.session.query(Application).statement.with_only_columns(func.count(Application.id)).scalar_subquery(),
+            db.session.query(Offer).statement.with_only_columns(func.count(Offer.id)).scalar_subquery(),
+            db.session.query(AuditLog).statement.with_only_columns(func.count(AuditLog.id)).scalar_subquery()
+        ).first()
+
+        total_logins = stats[0] or 0
+        failed_logins = stats[1] or 0
+        user_registrations = stats[2] or 0
+        dau = stats[3] or 0
+        resume_storage = stats[4] or 0
+        resume_uploads = stats[5] or 0
+        offer_uploads = stats[6] or 0
 
         db_rows = {
-            "users": User.query.count(),
-            "students": Student.query.count(),
-            "recruiters": Recruiter.query.count(),
-            "companies": Company.query.count(),
-            "drives": PlacementDrive.query.count(),
-            "applications": Application.query.count(),
-            "offers": Offer.query.count(),
-            "audit_logs": AuditLog.query.count()
+            "users": stats[2] or 0,
+            "students": stats[7] or 0,
+            "recruiters": stats[8] or 0,
+            "companies": stats[9] or 0,
+            "drives": stats[10] or 0,
+            "applications": stats[11] or 0,
+            "offers": stats[12] or 0,
+            "audit_logs": stats[13] or 0
         }
 
         return {
@@ -153,21 +179,24 @@ class AdminService:
             {"month": "Jun", "count": 185}
         ]
 
-        offers = Offer.query.all()
-        accepted = sum(1 for o in offers if o.status == OfferStatus.ACCEPTED)
-        declined = sum(1 for o in offers if o.status == OfferStatus.DECLINED)
-        pending = sum(1 for o in offers if o.status == OfferStatus.EXTENDED)
+        offer_counts = db.session.query(Offer.status, func.count(Offer.id))\
+            .group_by(Offer.status).all()
+        counts_map = {status: count for status, count in offer_counts}
+        accepted = counts_map.get(OfferStatus.ACCEPTED, 0)
+        declined = counts_map.get(OfferStatus.DECLINED, 0)
+        pending = counts_map.get(OfferStatus.EXTENDED, 0)
         ratios = {
             "accepted": accepted,
             "declined": declined,
             "pending": pending
         }
 
-        companies = Company.query.limit(5).all()
-        company_trends = []
-        for c in companies:
-            drives = PlacementDrive.query.filter_by(company_id=c.id).count()
-            company_trends.append({"name": c.name, "drives": drives})
+        company_drives = db.session.query(Company.name, func.count(PlacementDrive.id))\
+            .outerjoin(PlacementDrive, Company.id == PlacementDrive.company_id)\
+            .group_by(Company.id, Company.name)\
+            .limit(5)\
+            .all()
+        company_trends = [{"name": name, "drives": count} for name, count in company_drives]
 
         return {
             "user_growth": user_growth,
@@ -287,6 +316,7 @@ class AdminService:
                 profile_status=ProfileStatus.VERIFIED if user.is_verified else ProfileStatus.PENDING_VERIFICATION
             )
             db.session.add(student)
+            user.college_id = student.college_id
 
         elif role_enum == UserRole.RECRUITER:
             recruiter = Recruiter(
@@ -312,6 +342,7 @@ class AdminService:
                 is_active=user.is_active
             )
             db.session.add(tpo)
+            user.college_id = tpo.college_id
 
         cls.log_audit(
             user_id=user.id,
@@ -351,12 +382,13 @@ class AdminService:
             student.batch = form_data.get("student_batch").strip()
             student.graduation_year = int(form_data.get("student_graduation_year"))
             student.phone = form_data.get("student_phone").strip() if form_data.get("student_phone") else None
+            user.college_id = student.college_id
 
         elif role_enum == UserRole.RECRUITER and user.recruiter_profile:
             recruiter = user.recruiter_profile
             recruiter.company_id = uuid.UUID(form_data.get("recruiter_company_id"))
             recruiter.first_name = form_data.get("recruiter_first_name").strip()
-            recruiter.last_name = recruiter.last_name
+            recruiter.last_name = form_data.get("recruiter_last_name").strip()
             recruiter.designation = form_data.get("recruiter_designation").strip() if form_data.get("recruiter_designation") else None
             recruiter.phone = form_data.get("recruiter_phone").strip() if form_data.get("recruiter_phone") else None
             recruiter.is_active = user.is_active
@@ -370,6 +402,7 @@ class AdminService:
             tpo.department = form_data.get("tpo_department").strip() if form_data.get("tpo_department") else None
             tpo.phone = form_data.get("tpo_phone").strip() if form_data.get("tpo_phone") else None
             tpo.is_active = user.is_active
+            user.college_id = tpo.college_id
 
         cls.log_audit(
             user_id=user.id,
@@ -491,6 +524,7 @@ class AdminService:
                     profile_status=ProfileStatus.VERIFIED
                 )
                 db.session.add(student)
+                user.college_id = college.id
 
             elif role_enum == UserRole.RECRUITER:
                 company = Company.query.filter(
@@ -532,6 +566,7 @@ class AdminService:
                     is_active=True
                 )
                 db.session.add(tpo)
+                user.college_id = college.id
 
             count += 1
 

@@ -82,6 +82,34 @@ def main():
         except Exception as e:
             db.session.rollback()
             print(f"Non-critical migration alert: {e}")
+        
+        # Add college_id column to users table if it does not exist
+        try:
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS college_id UUID REFERENCES colleges(id) ON DELETE SET NULL;"))
+            db.session.commit()
+            print("Database columns for User college association verified/added.")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Non-critical migration alert: {e}")
+
+        # Add rejection_reason column to students table if it does not exist
+        try:
+            db.session.execute(db.text("ALTER TABLE students ADD COLUMN IF NOT EXISTS rejection_reason TEXT;"))
+            db.session.commit()
+            print("Database column for Student rejection reason verified/added.")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Non-critical migration alert: {e}")
+
+        # Add rejection_count column to students table if it does not exist
+        try:
+            db.session.execute(db.text("ALTER TABLE students ADD COLUMN IF NOT EXISTS rejection_count INTEGER DEFAULT 0;"))
+            db.session.commit()
+            print("Database column for Student rejection count verified/added.")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Non-critical migration alert: {e}")
+            
         print("Database tables validated.")
 
         repaired = migrate_legacy_enum_values(db.engine)

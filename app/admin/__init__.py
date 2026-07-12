@@ -516,3 +516,30 @@ def export_audit_logs():
     response.headers["Content-Disposition"] = "attachment; filename=system_audit_logs_archive.csv"
     response.headers["Content-Type"] = "text/csv"
     return response
+
+
+@admin_bp.route("/profile", methods=["GET"])
+@role_required(UserRole.ADMIN)
+def profile():
+    # Admin stats
+    from app.models import User, Student, Recruiter, TpoAdmin, PlacementDrive
+    
+    total_users = User.query.count()
+    total_students = Student.query.count()
+    total_recruiters = Recruiter.query.count()
+    total_tpos = TpoAdmin.query.count()
+    total_drives = PlacementDrive.query.count()
+
+    stats = {
+        "total_users": total_users,
+        "total_students": total_students,
+        "total_recruiters": total_recruiters,
+        "total_tpos": total_tpos,
+        "total_drives": total_drives
+    }
+
+    return render_template(
+        "admin/profile.html",
+        admin_user=current_user,
+        stats=stats
+    )
