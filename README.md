@@ -346,7 +346,7 @@ python run.py
 
 | Role | Email | Password |
 |------|--------|----------|
-| Admin | admin.demo@campushire.ai | Demo@1234 |
+| Admin | admin.demo@campushire.ai | Admin123 |
 | TPO | tpo.demo@campushire.ai | Demo@1234 |
 | Recruiter | recruiter.demo@campushire.ai | Demo@1234 |
 | Student | student.demo@campushire.ai | Demo@1234 |
