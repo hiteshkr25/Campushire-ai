@@ -70,23 +70,23 @@
   filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.60));
 }
 .ats-ring-progress.ats-ring--orange {
-  stroke: #f97316;
-  filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.60));
+  stroke: #f59e0b; /* Yellow / Amber */
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.60));
 }
 .ats-ring-progress.ats-ring--blue {
   stroke: #3b82f6;
   filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.60));
 }
 .ats-ring-progress.ats-ring--green {
-  stroke: #22c55e;
-  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.60));
+  stroke: #3b82f6; /* Back-compat green mapped to blue */
+  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.60));
 }
 
 /* Stronger glow in dark mode */
 [data-bs-theme="dark"] .ats-ring-progress.ats-ring--red    { filter: drop-shadow(0 0 6px rgba(239, 68,  68,  0.80)); }
-[data-bs-theme="dark"] .ats-ring-progress.ats-ring--orange { filter: drop-shadow(0 0 6px rgba(249, 115, 22,  0.80)); }
+[data-bs-theme="dark"] .ats-ring-progress.ats-ring--orange { filter: drop-shadow(0 0 6px rgba(245, 158, 11,  0.80)); }
 [data-bs-theme="dark"] .ats-ring-progress.ats-ring--blue   { filter: drop-shadow(0 0 6px rgba(59,  130, 246, 0.80)); }
-[data-bs-theme="dark"] .ats-ring-progress.ats-ring--green  { filter: drop-shadow(0 0 6px rgba(34,  197, 94,  0.80)); }
+[data-bs-theme="dark"] .ats-ring-progress.ats-ring--green  { filter: drop-shadow(0 0 6px rgba(59,  130, 246, 0.80)); }
 
 /* ── Label (centred over the SVG) ────────────────────────────── */
 .ats-ring-label {
@@ -107,6 +107,33 @@
   color: var(--ch-text-base, #1a1a2e);
   line-height: 1;
   letter-spacing: -0.02em;
+}
+
+/* Matching accent text colors for score label */
+.ats-ring-wrap.ats-ring--red .ats-ring-score {
+  color: #dc2626 !important;
+}
+.ats-ring-wrap.ats-ring--orange .ats-ring-score {
+  color: #c2410c !important; /* Rich contrast dark amber/orange text */
+}
+.ats-ring-wrap.ats-ring--blue .ats-ring-score {
+  color: #2563eb !important;
+}
+.ats-ring-wrap.ats-ring--green .ats-ring-score {
+  color: #2563eb !important;
+}
+
+[data-bs-theme="dark"] .ats-ring-wrap.ats-ring--red .ats-ring-score {
+  color: #f87171 !important;
+}
+[data-bs-theme="dark"] .ats-ring-wrap.ats-ring--orange .ats-ring-score {
+  color: #fb923c !important;
+}
+[data-bs-theme="dark"] .ats-ring-wrap.ats-ring--blue .ats-ring-score {
+  color: #60a5fa !important;
+}
+[data-bs-theme="dark"] .ats-ring-wrap.ats-ring--green .ats-ring-score {
+  color: #60a5fa !important;
 }
 
 .ats-ring-denom {

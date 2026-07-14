@@ -42,9 +42,9 @@ class AtsService:
 
         if not resume:
             return {
-                "score": 0,
+                "score": "N/A",
                 "status": "Not Available",
-                "message": "Upload a resume to generate ATS insights.",
+                "message": "Upload your resume to unlock ATS analysis, resume scoring, and recruiter matching.",
             }
 
         if not resume.parsed_text or resume.parse_status != ParseStatus.COMPLETED:
@@ -115,30 +115,29 @@ class AtsService:
             resume.parse_status == ParseStatus.COMPLETED
         )
 
-        education_found = False
-        if has_parsed:
-            try:
-                data = json.loads(resume.parsed_text)
-                education_found = len(data.get("structured_data", {}).get("education", [])) > 0
-            except Exception:
-                pass
-        if not education_found:
-            education_found = bool(student.cgpa is not None and student.graduation_year)
+        has_personal = bool(student.first_name and student.last_name and student.phone and student.date_of_birth and student.gender and student.bio)
+        has_academic = bool(student.cgpa is not None and student.graduation_year and student.batch and student.semester)
 
         if checklist_data:
             has_skills = checklist_data.get("skills", False)
             has_projects = checklist_data.get("projects", False)
+            has_certs = checklist_data.get("certifications", False)
         else:
             has_skills = student.skills.count() > 0
             has_projects = student.projects.count() > 0
+            has_certs = student.certifications.count() > 0
+
+        has_ats_ready = (has_personal and has_academic and has_resume and has_parsed)
 
         return [
-            {"label": "Resume Uploaded", "done": has_resume},
-            {"label": "Resume Parsed", "done": has_parsed},
+            {"label": "Personal Profile Completed", "done": has_personal},
+            {"label": "Academic Information Completed", "done": has_academic},
             {"label": "Skills Added", "done": has_skills},
             {"label": "Projects Added", "done": has_projects},
-            {"label": "Education Added", "done": education_found},
-            {"label": "Profile Completed", "done": profile_completion >= 40},
+            {"label": "Certifications Added", "done": has_certs},
+            {"label": "Resume Uploaded", "done": has_resume},
+            {"label": "Resume Parsed Successfully", "done": has_parsed},
+            {"label": "ATS Ready", "done": has_ats_ready},
         ]
 
     @classmethod

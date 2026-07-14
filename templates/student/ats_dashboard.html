@@ -10,6 +10,20 @@
 {% endblock %}
 
 {% block portal_content %}
+{% if not resume %}
+<div class="card dashboard-panel glass-dashboard-card border-0 text-center py-5">
+    <div class="card-body py-5" style="max-width: 550px; margin: 0 auto;">
+        <div class="mb-4 text-warning" style="font-size: 3.5rem;">
+            <i class="fa-solid fa-file-invoice" style="opacity: 0.85; filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.4));"></i>
+        </div>
+        <h3 class="h4 mb-3 fw-bold">ATS Analysis Locked</h3>
+        <p class="text-muted mb-4 fs-6">Upload your resume to unlock ATS analysis, resume scoring, and job matching.</p>
+        <a href="{{ url_for('student.resumes') }}" class="btn btn-primary px-4 py-2">
+            <i class="fa-solid fa-cloud-arrow-up me-2"></i>Upload Your Resume
+        </a>
+    </div>
+</div>
+{% else %}
 <!-- Statistics Summary Grid -->
 {% set total_drives = drives|length %}
 {% set highest_score = 0 %}
@@ -104,4 +118,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

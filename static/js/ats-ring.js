@@ -16,10 +16,9 @@
   var CIRCUMFERENCE = 301.593;
 
   function colorClass(score) {
-    if (score <= 40) return 'ats-ring--red';
-    if (score <= 70) return 'ats-ring--orange';
-    if (score <= 85) return 'ats-ring--blue';
-    return 'ats-ring--green';
+    if (score <= 39) return 'ats-ring--red';
+    if (score <= 69) return 'ats-ring--orange';
+    return 'ats-ring--blue';
   }
 
   function animateRing(wrap) {
@@ -32,6 +31,11 @@
       'ats-ring--red', 'ats-ring--orange', 'ats-ring--blue', 'ats-ring--green'
     );
     progress.classList.add(colorClass(score));
+
+    wrap.classList.remove(
+      'ats-ring--red', 'ats-ring--orange', 'ats-ring--blue', 'ats-ring--green'
+    );
+    wrap.classList.add(colorClass(score));
 
     /* Reset to fully hidden so re-animation always plays from 0 */
     progress.style.transition = 'none';

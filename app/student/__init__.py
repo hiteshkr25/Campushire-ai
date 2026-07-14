@@ -85,6 +85,10 @@ def dashboard():
     ats_checklist = AtsService.build_dashboard_checklist(
         student, profile_completion, resume=primary_resume, checklist_data=checklist_data
     )
+    
+    # Dynamic checklist progress
+    completed_count = sum(1 for item in ats_checklist if item["done"])
+    checklist_progress = int(round((completed_count / len(ats_checklist)) * 100)) if ats_checklist else 0
 
     # Fetch recent database notifications for the widget
     recent_db_notifications = NotificationService.get_dropdown_notifications(current_user.id, limit=3)
@@ -99,7 +103,7 @@ def dashboard():
             "time": student.created_at,
             "description": "Your student profile was created in the system."
         })
-        
+    
     # 2. Profile Verification
     if student.verified_at:
         if student.profile_status == ProfileStatus.VERIFIED:
@@ -201,8 +205,10 @@ def dashboard():
         profile_completion=profile_completion,
         ats_info=ats_info,
         ats_checklist=ats_checklist,
+        checklist_progress=checklist_progress,
         recent_db_notifications=recent_db_notifications,
         events=events,
+        resume=primary_resume
     )
 
 
@@ -1066,7 +1072,8 @@ def ats_dashboard():
     return render_template(
         "student/ats_dashboard.html",
         drives=drives_with_ats,
-        student=student
+        student=student,
+        resume=resume
     )
 
 

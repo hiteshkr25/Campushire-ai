@@ -79,12 +79,22 @@ def test_notification_system():
         
         print("[PASS] Profile resubmission resets status and completely clears review metadata.")
 
-        # 4. Test Verification Approval
-        print("Testing verification approval workflow...")
-        # Put back to pending for approval
-        student.profile_status = ProfileStatus.PENDING_VERIFICATION
-        db.session.commit()
-        
+        # Ensure student has a resume so they can be verified
+        from app.models.student import Resume, ParseStatus
+        if Resume.query.filter_by(student_id=student.id).count() == 0:
+            mock_resume = Resume(
+                student_id=student.id,
+                file_name="demo_resume.pdf",
+                file_path="uploads/resumes/demo_resume.pdf",
+                mime_type="application/pdf",
+                file_size_bytes=1024,
+                is_primary=True,
+                parse_status=ParseStatus.COMPLETED,
+                parsed_text='{"structured_data": {"skills": ["Python"], "projects": [], "certifications": [], "education": []}}'
+            )
+            db.session.add(mock_resume)
+            db.session.commit()
+
         TpoService.verify_student(student.id, tpo_user.id)
         
         # Reload student and check
