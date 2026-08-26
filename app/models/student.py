@@ -264,6 +264,28 @@ class Resume(BaseModel):
         lazy="dynamic",
     )
 
+    @property
+    def resolved_file_path(self):
+        """Resolves the physical filesystem path dynamically to be environment-agnostic."""
+        if not self.file_path:
+            return None
+        import os
+        from flask import current_app
+        from pathlib import Path
+        
+        # Standardize separators to forward slashes for cross-OS compatibility
+        standardized_path = self.file_path.replace("\\", "/")
+        
+        marker = "uploads/resumes/"
+        if marker in standardized_path:
+            relative_part = standardized_path.split(marker, 1)[1]
+        else:
+            # Fallback to the basename if the marker is not in the stored path
+            relative_part = os.path.basename(standardized_path)
+            
+        upload_root = Path(current_app.config["RESUME_UPLOAD_FOLDER"])
+        return upload_root / relative_part
+
     def to_dict(self, exclude=None, include=None, exclude_relationships=True):
         default_exclude = {"parsed_text", "file_path"}
         exclude = set(exclude or []) | default_exclude

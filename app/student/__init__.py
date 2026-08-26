@@ -603,7 +603,7 @@ def resumes():
 
 
 @student_bp.route("/resumes/<resume_id>/preview")
-@role_required(UserRole.STUDENT, UserRole.TPO)
+@role_required(UserRole.STUDENT, UserRole.TPO, UserRole.ADMIN)
 def preview_resume(resume_id):
     resume = Resume.query.get_or_404(_uuid_or_404(resume_id))
     
@@ -614,17 +614,24 @@ def preview_resume(resume_id):
     elif current_user.role == UserRole.TPO:
         from app.tpo.services import TpoService
         TpoService.validate_college_access(resume)
+    elif current_user.role == UserRole.ADMIN:
+        pass  # Admins have full access
         
-    file_path = Path(resume.file_path)
-    if not file_path.exists():
-        abort(404)
+    file_path = resume.resolved_file_path
+    if not file_path or not file_path.exists():
+        current_app.logger.warning("Resume file not found on disk: id=%s path=%s", resume.id, file_path)
+        flash("Resume file is no longer available.", "danger")
+        if current_user.role in (UserRole.TPO, UserRole.ADMIN):
+            return redirect(request.referrer or url_for("tpo.dashboard"))
+        return redirect(request.referrer or url_for("student.resumes"))
+
     if resume.mime_type == "application/pdf":
         return send_file(file_path, mimetype=resume.mime_type, as_attachment=False, download_name=resume.file_name)
     return render_template("student/resume_preview.html", resume=resume)
 
 
 @student_bp.route("/resumes/<resume_id>/download")
-@role_required(UserRole.STUDENT, UserRole.TPO)
+@role_required(UserRole.STUDENT, UserRole.TPO, UserRole.ADMIN)
 def download_resume(resume_id):
     resume = Resume.query.get_or_404(_uuid_or_404(resume_id))
     
@@ -635,10 +642,17 @@ def download_resume(resume_id):
     elif current_user.role == UserRole.TPO:
         from app.tpo.services import TpoService
         TpoService.validate_college_access(resume)
+    elif current_user.role == UserRole.ADMIN:
+        pass  # Admins have full access
         
-    file_path = Path(resume.file_path)
-    if not file_path.exists():
-        abort(404)
+    file_path = resume.resolved_file_path
+    if not file_path or not file_path.exists():
+        current_app.logger.warning("Resume file not found on disk: id=%s path=%s", resume.id, file_path)
+        flash("Resume file is no longer available.", "danger")
+        if current_user.role in (UserRole.TPO, UserRole.ADMIN):
+            return redirect(request.referrer or url_for("tpo.dashboard"))
+        return redirect(request.referrer or url_for("student.resumes"))
+
     return send_file(file_path, mimetype=resume.mime_type, as_attachment=True, download_name=resume.file_name)
 
 

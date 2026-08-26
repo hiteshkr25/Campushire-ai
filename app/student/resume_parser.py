@@ -1346,12 +1346,12 @@ class ResumeParserService:
     def parse_and_save_resume(cls, resume_id):
         resume = Resume.query.get_or_404(resume_id)
         try:
-            text = cls.extract_text(resume.file_path)
+            text = cls.extract_text(str(resume.resolved_file_path))
             if not text.strip():
                 raise ValueError("Resume file is empty or produced no text.")
 
             # Pass file_path so PyMuPDF can extract annotation-layer hyperlinks
-            parsed_data = cls.parse_resume_text(text, file_path=resume.file_path)
+            parsed_data = cls.parse_resume_text(text, file_path=str(resume.resolved_file_path))
 
             resume.parsed_text = json.dumps({
                 "raw_text":        text[:8000],

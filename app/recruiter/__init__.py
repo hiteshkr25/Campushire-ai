@@ -281,9 +281,11 @@ def preview_candidate_resume(resume_id):
     if not application:
         abort(403)
         
-    file_path = Path(resume.file_path)
-    if not file_path.exists():
-        abort(404)
+    file_path = resume.resolved_file_path
+    if not file_path or not file_path.exists():
+        current_app.logger.warning("Resume file not found on disk: id=%s path=%s", resume.id, file_path)
+        flash("Resume file is no longer available.", "danger")
+        return redirect(request.referrer or url_for("recruiter.candidates"))
         
     if resume.mime_type == "application/pdf":
         return send_file(file_path, mimetype=resume.mime_type, as_attachment=False, download_name=resume.file_name)
@@ -306,9 +308,11 @@ def download_candidate_resume(resume_id):
     if not application:
         abort(403)
         
-    file_path = Path(resume.file_path)
-    if not file_path.exists():
-        abort(404)
+    file_path = resume.resolved_file_path
+    if not file_path or not file_path.exists():
+        current_app.logger.warning("Resume file not found on disk: id=%s path=%s", resume.id, file_path)
+        flash("Resume file is no longer available.", "danger")
+        return redirect(request.referrer or url_for("recruiter.candidates"))
         
     return send_file(file_path, mimetype=resume.mime_type, as_attachment=True, download_name=resume.file_name)
 
