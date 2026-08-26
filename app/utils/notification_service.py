@@ -120,3 +120,59 @@ class NotificationService:
             notification.is_read = True
             notification.read_at = now
         db.session.commit()
+
+    @classmethod
+    def notify_students_about_announcement(cls, announcement):
+        from app.models.student import Student
+        from app.models.enums import AnnouncementAudience, NotificationType
+        from flask import url_for
+
+        if announcement.target_audience not in (AnnouncementAudience.ALL, AnnouncementAudience.STUDENTS):
+            return 0
+
+        # Retrieve student user IDs efficiently in 1 query
+        students = db.session.query(Student.user_id).filter(
+            Student.college_id == announcement.college_id
+        ).all()
+        student_user_ids = [s.user_id for s in students]
+
+        if not student_user_ids:
+            return 0
+
+        # Try to generate the dynamic notifications URL, fallback if outside request context
+        try:
+            action_url = url_for("student.notifications_page")
+        except RuntimeError:
+            action_url = "/student/notifications"
+
+        # Check existing notifications to prevent duplicates in 1 query
+        existing_user_ids = {
+            r[0] for r in db.session.query(Notification.user_id).filter(
+                Notification.entity_type == "Announcement",
+                Notification.entity_id == announcement.id
+            ).all()
+        }
+
+        # Create notifications in memory
+        notifications = []
+        for user_id in student_user_ids:
+            if user_id in existing_user_ids:
+                continue
+
+            notification = Notification(
+                user_id=user_id,
+                title="New Announcement",
+                message=f"New announcement: {announcement.title}",
+                notification_type=NotificationType.ANNOUNCEMENT,
+                entity_type="Announcement",
+                entity_id=announcement.id,
+                action_url=action_url,
+                is_read=False
+            )
+            notifications.append(notification)
+
+        if notifications:
+            db.session.add_all(notifications)
+            db.session.commit()
+
+        return len(notifications)

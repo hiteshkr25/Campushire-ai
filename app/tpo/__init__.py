@@ -865,9 +865,15 @@ def announcements():
             db.session.add(ann)
             try:
                 db.session.commit()
-                flash(f"Announcement '{title}' published successfully.", "success")
-            except Exception:
+                from app.utils.notification_service import NotificationService
+                num_notified = NotificationService.notify_students_about_announcement(ann)
+                if num_notified > 0:
+                    flash(f"Announcement '{title}' published successfully and notifications sent to {num_notified} eligible students.", "success")
+                else:
+                    flash(f"Announcement '{title}' published successfully.", "success")
+            except Exception as e:
                 db.session.rollback()
+                current_app.logger.error(f"Error publishing announcement: {str(e)}")
                 flash("Unable to publish announcement. Please try again.", "danger")
 
         return redirect(url_for("tpo.announcements"))
